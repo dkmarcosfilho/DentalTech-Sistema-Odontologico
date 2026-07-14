@@ -65,8 +65,8 @@ O desenvolvimento do sistema faz parte de um projeto acadêmico do curso Técnic
     width="30px" 
     style="padding-right: 20px;" 
     src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-plain.svg"
-/>
-<br\>
+/> <br/>
+
 
 # Integrantes
 - Marcos Filho 
