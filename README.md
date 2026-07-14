@@ -1,3 +1,5 @@
+<img src= "logo-clinica.png" width="500" height="400">
+
 ## Sobre
 O Sistema DentalTech é uma plataforma web criada para tornar a gestão da clínica odontológica mais prática, organizada e eficiente. A solução permite o gerenciamento de pacientes, agendamentos, consultas e demais informações essenciais para o funcionamento da clínica, além de oferecer uma experiência mais ágil e acessível tanto para os profissionais quanto para os pacientes.
 
@@ -63,9 +65,9 @@ O desenvolvimento do sistema faz parte de um projeto acadêmico do curso Técnic
     width="30px" 
     style="padding-right: 20px;" 
     src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-plain.svg"
-/>
+/> <br\>
 
 # Integrantes
-- Marcos Filho |
-- José Luís |
-- Bruno Rafael |
+- Marcos Filho 
+- José Luís 
+- Bruno Rafael 
