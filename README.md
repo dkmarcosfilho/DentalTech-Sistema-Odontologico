@@ -1,7 +1,7 @@
 <img src= "logo-clinica.png" width="500" height="400">
 
 ## Sobre
-O Sistema DentalTech é uma plataforma web criada para tornar a gestão da clínica odontológica mais prática, organizada e eficiente. A solução permite o gerenciamento de pacientes, agendamentos, consultas e demais informações essenciais para o funcionamento da clínica, além de oferecer uma experiência mais ágil e acessível tanto para os profissionais quanto para os pacientes.
+O Sistema DentalTech é uma Plataforma Web criada para tornar a gestão da clínica odontológica mais prática, organizada e eficiente. A solução permite o gerenciamento de pacientes, agendamentos, consultas e demais informações essenciais para o funcionamento da clínica, além de oferecer uma experiência mais ágil e acessível tanto para os profissionais quanto para os pacientes.
 
 O desenvolvimento do sistema faz parte de um projeto acadêmico do curso Técnico Integrado ao Ensino Médio em Informática para Internet do IFRN – Campus São Paulo do Potengi. Seu principal objetivo é aplicar os conhecimentos adquiridos durante o curso na construção de uma ferramenta que auxilie na digitalização dos processos da clínica, promovendo maior organização, produtividade e qualidade nos serviços prestados.
 
