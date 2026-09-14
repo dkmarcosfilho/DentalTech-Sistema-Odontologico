@@ -1,7 +1,7 @@
 name: Funcionalidade
 description: Registre uma funcionalidade ou melhoria percebida pelo usuário.
-title: "[STORY] "
-labels: ["enhancement"]
+title: "[funcionalidade] "
+labels: ["funcionalidade"]
 
 body:
   - type: textarea
