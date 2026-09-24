@@ -1,0 +1,90 @@
+{% extends "DentalTech/base.html" %}
+
+{% block title %}
+    Pacientes | DentalTech
+{% endblock %}
+
+{% block heading %}
+    Pacientes
+{% endblock %}
+
+{% block header_action %}
+    <a class="button" href="{% url 'DentalTech:paciente_create' %}">
+        + Novo paciente
+    </a>
+{% endblock %}
+
+{% block content %}
+
+<form class="toolbar" method="get">
+    <input
+        name="q"
+        value="{{ termo }}"
+        placeholder="Buscar por nome, CPF, telefone ou e-mail"
+    >
+
+    <button class="button secondary">
+        Buscar
+    </button>
+</form>
+
+<div class="card table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>Paciente</th>
+                <th>Contato</th>
+                <th>Nascimento</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for paciente in pacientes %}
+                <tr>
+                    <td>
+                        <a
+                            class="link"
+                            href="{% url 'DentalTech:paciente_detail' paciente.pk %}"
+                        >
+                            <b>{{ paciente.nome }}</b>
+                        </a>
+
+                        <small>
+                            {{ paciente.cpf }}
+                        </small>
+                    </td>
+
+                    <td>
+                        {{ paciente.telefone }}
+
+                        <small>
+                            {{ paciente.email|default:"Sem e-mail" }}
+                        </small>
+                    </td>
+
+                    <td>
+                        {{ paciente.data_nascimento|date:"d/m/Y" }}
+                    </td>
+
+                    <td>
+                        <a
+                            href="{% url 'DentalTech:paciente_update' paciente.pk %}"
+                        >
+                            Editar
+                        </a>
+                    </td>
+                </tr>
+
+            {% empty %}
+                <tr>
+                    <td colspan="4" class="empty">
+                        Nenhum paciente encontrado.
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}
