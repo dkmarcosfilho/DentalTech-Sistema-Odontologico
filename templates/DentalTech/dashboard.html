@@ -1,41 +1,120 @@
-{% extends "DentalTech/base.html" %}{% block title %}Dashboard | DentalTech{% endblock %}{% block heading %}Visão
-geral{% endblock %}
-{% block header_action %}<a class="button" href="{% url 'DentalTech:agendamento_create' %}">+ Novo agendamento</a>{%
-endblock %}
+{% extends "DentalTech/base.html" %}
+
+{% block title %}
+    Dashboard | DentalTech
+{% endblock %}
+
+{% block heading %}
+    Visão geral
+{% endblock %}
+
+{% block header_action %}
+    <a class="button" href="{% url 'DentalTech:agendamento_create' %}">
+        + Novo agendamento
+    </a>
+{% endblock %}
+
 {% block content %}
-<p class="muted">Resumo da clínica para {{ data_hoje|date:"d \d\e F" }}.</p>
-<section class="stats">
-    <div class="stat"><span>Pacientes</span><strong>{{ total_pacientes }}</strong><a
-            href="{% url 'DentalTech:pacientes' %}">Ver cadastro →</a></div>
-    <div class="stat"><span>Agenda de hoje</span><strong>{{ agendamentos_hoje }}</strong><a
-            href="{% url 'DentalTech:agenda' %}?data={{ data_hoje|date:'Y-m-d' }}">Abrir agenda →</a></div>
-    <div class="stat"><span>Próximos horários</span><strong>{{ proximos_agendamentos|length }}</strong><a
-            href="{% url 'DentalTech:agenda' %}">Ver agenda →</a></div>
-</section>
-<section class="grid-two">
-    <div class="card">
-        <div class="card-title">
-            <h2>Próximos horários</h2>
-            <a href="{% url 'DentalTech:agenda' %}">Ver todos</a>
-        </div>{% for item in proximos_agendamentos %}<div class="appointment">
-            <time>{{ item.horario|time:"H:i" }}</time>
-            <div><b>{{ item.paciente.nome }}</b>
-                <small>{{ item.motivo|default:"Consulta odontológica" }} · {{ item.profissional.nome }}</small>
+    <p class="muted">
+        Resumo da clínica para {{ data_hoje|date:"d \d\e F" }}.
+    </p>
+
+    <section class="stats">
+        <div class="stat">
+            <span>Pacientes</span>
+            <strong>{{ total_pacientes }}</strong>
+
+            <a href="{% url 'DentalTech:pacientes' %}">
+                Ver cadastro →
+            </a>
+        </div>
+
+        <div class="stat">
+            <span>Agenda de hoje</span>
+            <strong>{{ agendamentos_hoje }}</strong>
+
+            <a href="{% url 'DentalTech:agenda' %}?data={{ data_hoje|date:'Y-m-d' }}">
+                Abrir agenda →
+            </a>
+        </div>
+
+        <div class="stat">
+            <span>Próximos horários</span>
+            <strong>{{ proximos_agendamentos|length }}</strong>
+
+            <a href="{% url 'DentalTech:agenda' %}">
+                Ver agenda →
+            </a>
+        </div>
+    </section>
+
+    <section class="grid-two">
+        <div class="card">
+            <div class="card-title">
+                <h2>Próximos horários</h2>
+
+                <a href="{% url 'DentalTech:agenda' %}">
+                    Ver todos
+                </a>
             </div>
-            <span class="badge {{ item.status|lower }}">{{ item.get_status_display }}</span>
-        </div>{% empty %}<p class="empty">Nenhum horário futuro encontrado.</p>{% endfor %}
-    </div>
-    <div class="card">
-        <div class="card-title">
-            <h2>Atendimentos recentes</h2>
-        </div>{% for item in atendimentos_recentes %}<div class="list-row">
-            <div class="avatar">{{ item.agendamento.paciente.nome|first|upper }}</div>
-            <div>
-                <b>{{ item.agendamento.paciente.nome }}</b>
-                <small>{{ item.data|date:"d/m/Y H:i" }} · {{ item.profissional.nome }}</small>
+
+            {% for item in proximos_agendamentos %}
+                <div class="appointment">
+                    <time>
+                        {{ item.horario|time:"H:i" }}
+                    </time>
+
+                    <div>
+                        <b>{{ item.paciente.nome }}</b>
+
+                        <small>
+                            {{ item.motivo|default:"Consulta odontológica" }}
+                            ·
+                            {{ item.profissional.nome }}
+                        </small>
+                    </div>
+
+                    <span class="badge {{ item.status|lower }}">
+                        {{ item.get_status_display }}
+                    </span>
+                </div>
+            {% empty %}
+                <p class="empty">
+                    Nenhum horário futuro encontrado.
+                </p>
+            {% endfor %}
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <h2>Atendimentos recentes</h2>
             </div>
-            <span class="badge concluido">{{ item.get_status_display }}</span>
-        </div>{% empty %}<p class="empty">Os atendimentos registrados aparecerão aqui.</p>{% endfor %}
-    </div>
-</section>
+
+            {% for item in atendimentos_recentes %}
+                <div class="list-row">
+                    <div class="avatar">
+                        {{ item.agendamento.paciente.nome|first|upper }}
+                    </div>
+
+                    <div>
+                        <b>{{ item.agendamento.paciente.nome }}</b>
+
+                        <small>
+                            {{ item.data|date:"d/m/Y H:i" }}
+                            ·
+                            {{ item.profissional.nome }}
+                        </small>
+                    </div>
+
+                    <span class="badge concluido">
+                        {{ item.get_status_display }}
+                    </span>
+                </div>
+            {% empty %}
+                <p class="empty">
+                    Os atendimentos registrados aparecerão aqui.
+                </p>
+            {% endfor %}
+        </div>
+    </section>
 {% endblock %}
