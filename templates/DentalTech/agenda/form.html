@@ -1,0 +1,49 @@
+```html
+{% extends "DentalTech/base.html" %}
+
+{% block title %}
+    {{ titulo }} | DentalTech
+{% endblock %}
+
+{% block heading %}
+    {{ titulo }}
+{% endblock %}
+
+{% block content %}
+
+<form method="post" class="card form-card">
+
+    {% csrf_token %}
+
+    {% for field in form %}
+
+        <label>
+            {{ field.label }}
+
+            {{ field }}
+
+            {% for error in field.errors %}
+                <span class="field-error">
+                    {{ error }}
+                </span>
+            {% endfor %}
+        </label>
+
+    {% endfor %}
+
+    <div class="form-actions">
+
+        <a href="{% url 'DentalTech:agenda' %}">
+            Cancelar
+        </a>
+
+        <button type="submit" class="button">
+            Salvar agendamento
+        </button>
+
+    </div>
+
+</form>
+
+{% endblock %}
+```

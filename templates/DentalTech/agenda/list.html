@@ -1,0 +1,198 @@
+{% extends "DentalTech/base.html" %}
+
+{% block title %}
+    Agenda | DentalTech
+{% endblock %}
+
+{% block heading %}
+    Agenda
+{% endblock %}
+
+{% block header_action %}
+    <a class="button" href="{% url 'DentalTech:agendamento_create' %}">
+        + Novo agendamento
+    </a>
+{% endblock %}
+
+{% block content %}
+
+<form class="card filters" method="get">
+
+    <label>
+        Data
+        <input
+            type="date"
+            name="data"
+            value="{{ filtros.data }}"
+        >
+    </label>
+
+    <label>
+        Status
+        <select name="status">
+
+            <option value="">
+                Todos os status
+            </option>
+
+            {% for value, label in status_choices %}
+                <option
+                    value="{{ value }}"
+                    {% if filtros.status == value %}
+                        selected
+                    {% endif %}
+                >
+                    {{ label }}
+                </option>
+            {% endfor %}
+
+        </select>
+    </label>
+
+    <label>
+        Profissional
+        <select name="profissional">
+
+            <option value="">
+                Todos os profissionais
+            </option>
+
+            {% for profissional in profissionais %}
+                <option
+                    value="{{ profissional.pk }}"
+                    {% if filtros.profissional == profissional.pk|stringformat:"s" %}
+                        selected
+                    {% endif %}
+                >
+                    {{ profissional.nome }}
+                </option>
+            {% endfor %}
+
+        </select>
+    </label>
+
+    <button type="submit" class="button secondary">
+        Filtrar
+    </button>
+
+</form>
+
+
+<div class="card table-wrap">
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>Data e hora</th>
+                <th>Paciente</th>
+                <th>Profissional</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for item in agendamentos %}
+
+                <tr>
+
+                    <td>
+                        <b>
+                            {{ item.data|date:"d/m/Y" }}
+                        </b>
+
+                        <small>
+                            {{ item.horario|time:"H:i" }}
+                        </small>
+                    </td>
+
+
+                    <td>
+
+                        <a
+                            class="link"
+                            href="{% url 'DentalTech:paciente_detail' item.paciente.pk %}"
+                        >
+                            {{ item.paciente.nome }}
+                        </a>
+
+                        <small>
+                            {{ item.motivo|default:"Consulta odontológica" }}
+                        </small>
+
+                    </td>
+
+
+                    <td>
+                        {{ item.profissional.nome }}
+                    </td>
+
+
+                    <td>
+
+                        <span class="badge {{ item.status|lower }}">
+                            {{ item.get_status_display }}
+                        </span>
+
+                    </td>
+
+
+                    <td>
+
+                        <a
+                            href="{% url 'DentalTech:agendamento_update' item.pk %}"
+                        >
+                            Editar
+                        </a>
+
+
+                        {% if item.status != "CANCELADA" %}
+
+                            {% if item.atendimento %}
+
+                                ·
+
+                                <a
+                                    href="{% url 'DentalTech:atendimento_detail' item.atendimento.pk %}"
+                                >
+                                    Atendimento
+                                </a>
+
+                            {% else %}
+
+                                ·
+
+                                <a
+                                    href="{% url 'DentalTech:atendimento_create' item.pk %}"
+                                >
+                                    Registrar
+                                </a>
+
+                            {% endif %}
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+            {% empty %}
+
+                <tr>
+                    <td colspan="5" class="empty">
+                        Nenhum agendamento para os filtros selecionados.
+                    </td>
+                </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% endblock %}
+``
