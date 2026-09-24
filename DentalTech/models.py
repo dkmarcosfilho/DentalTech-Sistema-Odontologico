@@ -1,17 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-
-class Agendamento(models.Model):
-    paciente = models.ForeignKey('Paciente', on_delete=models.CASCADE)
-    dentista = models.ForeignKey('Dentista', on_delete=models.CASCADE)
-    data_hora = models.DateTimeField()
-    procedimento = models.CharField(max_length=200, blank=True, null=True)
-    observacoes = models.TextField(blank=True, null=True)
-
-    def __str__(self):
-        return f"{self.paciente} - {self.data_hora.strftime('%d/%m/%Y %H:%M')}"
-
 class Paciente(models.Model):
     nome = models.CharField(max_length=150)
     cpf = models.CharField(max_length=14, unique=True)
