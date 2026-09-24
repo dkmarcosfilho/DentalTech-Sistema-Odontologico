@@ -1,0 +1,21 @@
+{% extends "DentalTech/base.html" %}
+{% block title %}Configurações | DentalTech{% endblock %}
+{% block heading %}Configurações{% endblock %}
+{% block content %}
+<div class="grid-two">
+  <div class="card">
+    <h2>Minha conta</h2>
+    <div class="settings-row"><span>Usuário</span><strong>{{ usuario.username }}</strong></div>
+    <div class="settings-row"><span>Nome</span><strong>{{ usuario.get_full_name|default:"Não informado" }}</strong></div>
+    <div class="settings-row"><span>E-mail</span><strong>{{ usuario.email|default:"Não informado" }}</strong></div>
+    <p class="muted">Para alterar senha e dados avançados da conta, utilize o painel administrativo do Django.</p>
+  </div>
+  <div class="card">
+    <h2>Clínica</h2>
+    <div class="settings-row"><span>Sistema</span><strong>DentalTech</strong></div>
+    <div class="settings-row"><span>Cadastros de dentistas</span><strong>{{ dentistas }}</strong></div>
+    <p class="muted">Os dentistas cadastrados aparecem automaticamente no formulário de novos agendamentos.</p>
+    <a class="button" href="{% url 'DentalTech:dentistas' %}">Gerenciar dentistas</a>
+  </div>
+</div>
+{% endblock %}

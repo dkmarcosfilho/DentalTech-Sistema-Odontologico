@@ -1,0 +1,24 @@
+{% extends "DentalTech/base.html" %}
+{% block title %}Entrar | DentalTech{% endblock %}
+{% block public_content %}
+<div class="login-page">
+  <div class="login-card">
+    <div class="login-brand">Dental<span>Tech</span></div>
+    <p class="eyebrow">SISTEMA ODONTOLÓGICO</p>
+    <h1>Bem-vindo de volta</h1>
+    <p class="muted">Entre com seu usuário e senha para acessar a clínica.</p>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.GET.next }}">
+      <label>Usuário
+        <input type="text" name="username" autocomplete="username" required autofocus>
+      </label>
+      <label>Senha
+        <input type="password" name="password" autocomplete="current-password" required>
+      </label>
+      <button class="button login-button" type="submit">Entrar</button>
+    </form>
+    <p class="login-help">Acesso administrativo: use um usuário criado pelo Django.</p>
+  </div>
+</div>
+{% endblock %}

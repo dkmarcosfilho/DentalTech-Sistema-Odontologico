@@ -1,0 +1,25 @@
+{% extends "DentalTech/base.html" %}
+{% block title %}Dentistas | DentalTech{% endblock %}
+{% block heading %}Dentistas{% endblock %}
+{% block header_action %}<a class="button" href="{% url 'DentalTech:dentista_create' %}">+ Novo dentista</a>{% endblock %}
+{% block content %}
+<div class="card table-wrap">
+<table>
+<thead><tr><th>Nome</th><th>CRO</th><th>Especialidade</th><th>Telefone</th><th>E-mail</th><th></th></tr></thead>
+<tbody>
+{% for profissional in profissionais %}
+<tr>
+<td><strong>{{ profissional.nome }}</strong></td>
+<td>{{ profissional.cro }}</td>
+<td>{{ profissional.especialidade|default:"—" }}</td>
+<td>{{ profissional.telefone|default:"—" }}</td>
+<td>{{ profissional.email|default:"—" }}</td>
+<td><a href="{% url 'DentalTech:dentista_update' profissional.pk %}">Editar</a></td>
+</tr>
+{% empty %}
+<tr><td colspan="6" class="empty">Nenhum dentista cadastrado. Cadastre o primeiro para liberar os agendamentos.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% endblock %}

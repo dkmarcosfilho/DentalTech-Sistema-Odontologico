@@ -1,19 +1,29 @@
 from datetime import date
 
 from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from .forms import (
     AgendamentoForm,
     AtendimentoForm,
     AtendimentoProcedimentoFormSet,
     PacienteForm,
+    ProfissionalForm,
 )
-from .models import Agendamento, Atendimento, Paciente, Profissional
+from .models import (
+    Agendamento,
+    Atendimento,
+    Paciente,
+    Profissional,
+    Relatorio,
+)
 
 
+@login_required
 def dashboard(request):
     hoje = date.today()
     proximos = Agendamento.objects.filter(
@@ -31,6 +41,32 @@ def dashboard(request):
     })
 
 
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect("DentalTech:dashboard")
+    if request.method == "POST":
+        username = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "")
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            next_url = request.GET.get("next") or request.POST.get("next")
+            if next_url and url_has_allowed_host_and_scheme(
+                next_url, allowed_hosts={request.get_host()}
+            ):
+                return redirect(next_url)
+            return redirect("DentalTech:dashboard")
+        messages.error(request, "Usuário ou senha inválidos.")
+    return render(request, "DentalTech/login.html")
+
+
+def logout_view(request):
+    logout(request)
+    messages.success(request, "Você saiu do DentalTech.")
+    return redirect("DentalTech:login")
+
+
+@login_required
 def paciente_list(request):
     termo = request.GET.get("q", "").strip()
     pacientes = Paciente.objects.all()
@@ -42,6 +78,7 @@ def paciente_list(request):
     return render(request, "DentalTech/pacientes/list.html", {"pacientes": pacientes, "termo": termo})
 
 
+@login_required
 def paciente_detail(request, pk):
     paciente = get_object_or_404(
         Paciente.objects.prefetch_related("agendamentos__profissional"),
@@ -71,6 +108,7 @@ def paciente_update(request, pk):
     return render(request, "DentalTech/pacientes/form.html", {"form": form, "titulo": "Editar paciente"})
 
 
+@login_required
 def agendamento_list(request):
     agendamentos = Agendamento.objects.select_related("paciente", "profissional")
     data = request.GET.get("data", "")
@@ -112,6 +150,61 @@ def agendamento_update(request, pk):
 
 
 @login_required
+def dentistas(request):
+    profissionais = Profissional.objects.select_related("usuario").all()
+    return render(request, "DentalTech/dentistas/list.html", {"profissionais": profissionais})
+
+
+@login_required
+def dentista_create(request):
+    form = ProfissionalForm(request.POST or None)
+    if form.is_valid():
+        form.save()
+        messages.success(request, "Dentista cadastrado com sucesso.")
+        return redirect("DentalTech:dentistas")
+    return render(request, "DentalTech/dentistas/form.html", {
+        "form": form, "titulo": "Novo dentista"
+    })
+
+
+@login_required
+def dentista_update(request, pk):
+    profissional = get_object_or_404(Profissional, pk=pk)
+    form = ProfissionalForm(request.POST or None, instance=profissional)
+    if form.is_valid():
+        form.save()
+        messages.success(request, "Dentista atualizado com sucesso.")
+        return redirect("DentalTech:dentistas")
+    return render(request, "DentalTech/dentistas/form.html", {
+        "form": form, "titulo": "Editar dentista"
+    })
+
+
+@login_required
+def relatorios(request):
+    relatorios = Relatorio.objects.select_related("gerado_por").all()
+    contexto = {
+        "relatorios": relatorios,
+        "total_pacientes": Paciente.objects.count(),
+        "total_dentistas": Profissional.objects.count(),
+        "total_agendamentos": Agendamento.objects.count(),
+        "total_atendimentos": Atendimento.objects.count(),
+        "agendamentos_pendentes": Agendamento.objects.filter(
+            status__in=[Agendamento.Status.AGENDADA, Agendamento.Status.CONFIRMADA]
+        ).count(),
+    }
+    return render(request, "DentalTech/relatorios.html", contexto)
+
+
+@login_required
+def configuracoes(request):
+    return render(request, "DentalTech/configuracoes.html", {
+        "usuario": request.user,
+        "dentistas": Profissional.objects.count(),
+    })
+
+
+@login_required
 def atendimento_create(request, agendamento_id):
     agendamento = get_object_or_404(
         Agendamento.objects.select_related("paciente", "profissional"), pk=agendamento_id
@@ -131,6 +224,7 @@ def atendimento_create(request, agendamento_id):
     })
 
 
+@login_required
 def atendimento_detail(request, pk):
     atendimento = get_object_or_404(
         Atendimento.objects.select_related(
