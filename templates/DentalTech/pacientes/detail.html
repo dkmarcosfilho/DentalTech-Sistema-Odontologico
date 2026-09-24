@@ -1,0 +1,99 @@
+{% extends "DentalTech/base.html" %}
+
+{% block title %}
+    Atendimento | DentalTech
+{% endblock %}
+
+{% block heading %}
+    Atendimento de {{ atendimento.agendamento.paciente.nome }}
+{% endblock %}
+
+{% block header_action %}
+    <a
+        class="button secondary"
+        href="{% url 'DentalTech:atendimento_update' atendimento.pk %}"
+    >
+        Editar atendimento
+    </a>
+{% endblock %}
+
+{% block content %}
+
+<div class="grid-two">
+
+    <div class="card">
+        <h2>Registro clínico</h2>
+
+        <dl>
+            <dt>Data</dt>
+            <dd>
+                {{ atendimento.data|date:"d/m/Y H:i" }}
+            </dd>
+
+            <dt>Profissional</dt>
+            <dd>
+                {{ atendimento.profissional.nome }}
+            </dd>
+
+            <dt>Status</dt>
+            <dd>
+                <span class="badge concluido">
+                    {{ atendimento.get_status_display }}
+                </span>
+            </dd>
+        </dl>
+
+        <h3>Descrição</h3>
+        <p>
+            {{ atendimento.descricao|linebreaksbr }}
+        </p>
+
+        {% if atendimento.diagnostico %}
+            <h3>Diagnóstico</h3>
+            <p>
+                {{ atendimento.diagnostico|linebreaksbr }}
+            </p>
+        {% endif %}
+
+        {% if atendimento.observacoes %}
+            <h3>Observações</h3>
+            <p>
+                {{ atendimento.observacoes|linebreaksbr }}
+            </p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>Procedimentos</h2>
+
+        {% for item in atendimento.procedimentos.all %}
+            <div class="list-row">
+                <div>
+                    <b>
+                        {{ item.procedimento.nome }}
+                    </b>
+
+                    <small>
+                        {% if item.dente %}
+                            Dente {{ item.dente.numero }} ·
+                        {% endif %}
+
+                        {{ item.observacoes|default:"Sem observações" }}
+                    </small>
+                </div>
+
+                <strong>
+                    R$ {{ item.procedimento.valor|floatformat:2 }}
+                </strong>
+            </div>
+
+        {% empty %}
+            <p class="empty">
+                Nenhum procedimento vinculado.
+            </p>
+        {% endfor %}
+    </div>
+
+</div>
+
+{% endblock %}
