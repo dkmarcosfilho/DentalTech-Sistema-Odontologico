@@ -1,19 +1,113 @@
-from django.urls import path
+from django import forms
+from django.forms import inlineformset_factory
 
-from . import views
+from .models import (
+    Agendamento,
+    Atendimento,
+    AtendimentoProcedimento,
+    Paciente,
+    Profissional,
+)
 
-app_name = "DentalTech"
 
-urlpatterns = [
-    path("", views.dashboard, name="dashboard"),
-    path("pacientes/", views.paciente_list, name="pacientes"),
-    path("pacientes/novo/", views.paciente_create, name="paciente_create"),
-    path("pacientes/<int:pk>/", views.paciente_detail, name="paciente_detail"),
-    path("pacientes/<int:pk>/editar/", views.paciente_update, name="paciente_update"),
-    path("agenda/", views.agendamento_list, name="agenda"),
-    path("agenda/novo/", views.agendamento_create, name="agendamento_create"),
-    path("agenda/<int:pk>/editar/", views.agendamento_update, name="agendamento_update"),
-    path("agenda/<int:agendamento_id>/atendimento/novo/", views.atendimento_create, name="atendimento_create"),
-    path("atendimentos/<int:pk>/", views.atendimento_detail, name="atendimento_detail"),
-    path("atendimentos/<int:pk>/editar/", views.atendimento_update, name="atendimento_update"),
-]
+class DateInput(forms.DateInput):
+    input_type = "date"
+
+
+class TimeInput(forms.TimeInput):
+    input_type = "time"
+
+
+class PacienteForm(forms.ModelForm):
+    class Meta:
+        model = Paciente
+        fields = [
+            "nome",
+            "cpf",
+            "data_nascimento",
+            "telefone",
+            "email",
+            "endereco",
+            "observacoes",
+        ]
+        widgets = {
+            "data_nascimento": DateInput()
+        }
+
+
+class ProfissionalForm(forms.ModelForm):
+    class Meta:
+        model = Profissional
+        fields = [
+            "nome",
+            "cro",
+            "especialidade",
+            "telefone",
+            "email",
+        ]
+        labels = {
+            "nome": "Nome do dentista",
+            "cro": "CRO",
+            "especialidade": "Especialidade",
+            "telefone": "Telefone",
+            "email": "E-mail",
+        }
+
+
+class AgendamentoForm(forms.ModelForm):
+    class Meta:
+        model = Agendamento
+        fields = [
+            "paciente",
+            "data",
+            "horario",
+            "status",
+            "motivo",
+            "observacoes",
+        ]
+        widgets = {
+            "data": DateInput(),
+            "horario": TimeInput(),
+        }
+        labels = {
+            "paciente": "Paciente",
+            "data": "Data",
+            "horario": "Horário",
+            "status": "Status",
+            "motivo": "Motivo da consulta",
+            "observacoes": "Observações",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["paciente"].queryset = Paciente.objects.order_by("nome")
+
+
+class AtendimentoForm(forms.ModelForm):
+    class Meta:
+        model = Atendimento
+        fields = [
+            "descricao",
+            "diagnostico",
+            "observacoes",
+            "status",
+        ]
+
+
+class AtendimentoProcedimentoForm(forms.ModelForm):
+    class Meta:
+        model = AtendimentoProcedimento
+        fields = [
+            "procedimento",
+            "dente",
+            "observacoes",
+        ]
+
+
+AtendimentoProcedimentoFormSet = inlineformset_factory(
+    Atendimento,
+    AtendimentoProcedimento,
+    form=AtendimentoProcedimentoForm,
+    extra=1,
+    can_delete=True,
+)
