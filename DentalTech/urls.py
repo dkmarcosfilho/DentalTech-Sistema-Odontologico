@@ -1,113 +1,87 @@
-from django import forms
-from django.forms import inlineformset_factory
+from django.urls import path
 
-from .models import (
-    Agendamento,
-    Atendimento,
-    AtendimentoProcedimento,
-    Paciente,
-    Profissional,
-)
+from . import views
 
 
-class DateInput(forms.DateInput):
-    input_type = "date"
+urlpatterns = [
+    # Autenticação
+    path("login/", views.login_view, name="login"),
+    path("cadastro/", views.cadastro_view, name="cadastro"),
+    path("sair/", views.logout_view, name="logout"),
 
+    # Dashboard
+    path("", views.dashboard, name="dashboard"),
 
-class TimeInput(forms.TimeInput):
-    input_type = "time"
+    # Pacientes
+    path("pacientes/", views.paciente_list, name="pacientes"),
+    path(
+        "pacientes/novo/",
+        views.paciente_create,
+        name="paciente_create",
+    ),
+    path(
+        "pacientes/<int:pk>/",
+        views.paciente_detail,
+        name="paciente_detail",
+    ),
+    path(
+        "pacientes/<int:pk>/editar/",
+        views.paciente_update,
+        name="paciente_update",
+    ),
 
+    # Agenda
+    path("agenda/", views.agendamento_list, name="agenda"),
+    path(
+        "agenda/novo/",
+        views.agendamento_create,
+        name="agendamento_create",
+    ),
+    path(
+        "agenda/<int:pk>/editar/",
+        views.agendamento_update,
+        name="agendamento_update",
+    ),
 
-class PacienteForm(forms.ModelForm):
-    class Meta:
-        model = Paciente
-        fields = [
-            "nome",
-            "cpf",
-            "data_nascimento",
-            "telefone",
-            "email",
-            "endereco",
-            "observacoes",
-        ]
-        widgets = {
-            "data_nascimento": DateInput()
-        }
+    # Dentistas
+    path("dentistas/", views.dentistas, name="dentistas"),
+    path(
+        "dentistas/novo/",
+        views.dentista_create,
+        name="dentista_create",
+    ),
+    path(
+        "dentistas/<int:pk>/editar/",
+        views.dentista_update,
+        name="dentista_update",
+    ),
 
+    # Relatórios e configurações
+    path(
+        "relatorios/",
+        views.relatorios,
+        name="relatorios",
+    ),
+    path(
+        "configuracoes/",
+        views.configuracoes,
+        name="configuracoes",
+    ),
 
-class ProfissionalForm(forms.ModelForm):
-    class Meta:
-        model = Profissional
-        fields = [
-            "nome",
-            "cro",
-            "especialidade",
-            "telefone",
-            "email",
-        ]
-        labels = {
-            "nome": "Nome do dentista",
-            "cro": "CRO",
-            "especialidade": "Especialidade",
-            "telefone": "Telefone",
-            "email": "E-mail",
-        }
-
-
-class AgendamentoForm(forms.ModelForm):
-    class Meta:
-        model = Agendamento
-        fields = [
-            "paciente",
-            "data",
-            "horario",
-            "status",
-            "motivo",
-            "observacoes",
-        ]
-        widgets = {
-            "data": DateInput(),
-            "horario": TimeInput(),
-        }
-        labels = {
-            "paciente": "Paciente",
-            "data": "Data",
-            "horario": "Horário",
-            "status": "Status",
-            "motivo": "Motivo da consulta",
-            "observacoes": "Observações",
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["paciente"].queryset = Paciente.objects.order_by("nome")
-
-
-class AtendimentoForm(forms.ModelForm):
-    class Meta:
-        model = Atendimento
-        fields = [
-            "descricao",
-            "diagnostico",
-            "observacoes",
-            "status",
-        ]
-
-
-class AtendimentoProcedimentoForm(forms.ModelForm):
-    class Meta:
-        model = AtendimentoProcedimento
-        fields = [
-            "procedimento",
-            "dente",
-            "observacoes",
-        ]
-
-
-AtendimentoProcedimentoFormSet = inlineformset_factory(
-    Atendimento,
-    AtendimentoProcedimento,
-    form=AtendimentoProcedimentoForm,
-    extra=1,
-    can_delete=True,
-)
+    # Atendimentos
+    path(
+        "agenda/<int:agendamento_id>/atendimento/novo/",
+        views.atendimento_create,
+        name="atendimento_create",
+    ),
+    path(
+        "atendimentos/<int:pk>/",
+        views.atendimento_detail,
+        name="atendimento_detail",
+    ),
+    path(
+        "atendimentos/<int:pk>/editar/",
+        views.atendimento_update,
+        name="atendimento_update",
+    ),
+]

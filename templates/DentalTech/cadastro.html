@@ -1,0 +1,48 @@
+{% extends "DentalTech/base.html" %}
+{% block title %}Cadastro | DentalTech{% endblock %}
+{% block public_content %}
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="login-brand">Dental<span>Tech</span></div>
+    <p class="eyebrow">NOVO ACESSO</p>
+    <h1>Criar conta</h1>
+    <p class="muted">Cadastre um usuário para acessar o sistema odontológico.</p>
+
+    {% if form.non_field_errors %}
+      <div class="errors">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <label>Usuário
+        {{ form.username }}
+        {% if form.username.errors %}<span class="field-error">{{ form.username.errors|striptags }}</span>{% endif %}
+        <small>Use um nome de usuário para entrar no DentalTech.</small>
+      </label>
+
+      <label>E-mail <span class="muted">(opcional)</span>
+        {{ form.email }}
+        {% if form.email.errors %}<span class="field-error">{{ form.email.errors|striptags }}</span>{% endif %}
+      </label>
+
+      <label>Senha
+        {{ form.password1 }}
+        {% if form.password1.errors %}<span class="field-error">{{ form.password1.errors|striptags }}</span>{% endif %}
+        <small>A senha precisa atender às regras de segurança do Django.</small>
+      </label>
+
+      <label>Confirmar senha
+        {{ form.password2 }}
+        {% if form.password2.errors %}<span class="field-error">{{ form.password2.errors|striptags }}</span>{% endif %}
+      </label>
+
+      <button class="button login-button" type="submit">Cadastrar</button>
+    </form>
+
+    <div class="auth-links">
+      <span>Já possui uma conta?</span>
+      <a href="{% url 'DentalTech:login' %}">Fazer login</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -8,14 +8,14 @@
     Atendimento de {{ atendimento.agendamento.paciente.nome }}
 {% endblock %}
 
-{% block header_action %}
-    <a
-        class="button secondary"
-        href="{% url 'DentalTech:atendimento_update' atendimento.pk %}"
-    >
-        Editar atendimento
-    </a>
-{% endblock %}
+{% if atendimento %}
+<a
+    class="button secondary"
+    href="{% url 'DentalTech:atendimento_update' atendimento.pk %}"
+>
+    Editar atendimento
+</a>
+{% endif %}
 
 {% block content %}
 

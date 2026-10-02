@@ -1,33 +1,51 @@
 {% load static %}
 <!doctype html>
 <html lang="pt-br">
-
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}DentalTech{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'DentalTech/style.css' %}">
-
 </head>
-
 <body>
-  <aside class="sidebar"><a class="brand" href="{% url 'DentalTech:dashboard' %}">Dental<span>Tech</span></a>
-    <nav><a href="{% url 'DentalTech:dashboard' %}">Visão geral</a><a href="{% url 'DentalTech:agenda' %}">Agenda</a><a
-        href="{% url 'DentalTech:pacientes' %}">Pacientes</a></nav>
-    <div class="sidebar-footer">{% if request.user.is_authenticated %}Olá, {{
-      request.user.get_short_name|default:request.user.username }}{% else %}<a
-        href="/admin/login/?next={{ request.path }}">Entrar</a>{% endif %}</div>
+{% if request.user.is_authenticated %}
+  <aside class="sidebar">
+    <a class="brand" href="{% url 'DentalTech:dashboard' %}">Dental<span>Tech</span></a>
+    <nav>
+      <a href="{% url 'DentalTech:dashboard' %}">Visão geral</a>
+      <a href="{% url 'DentalTech:agenda' %}">Agenda</a>
+      <a href="{% url 'DentalTech:pacientes' %}">Pacientes</a>
+      <a href="{% url 'DentalTech:dentistas' %}">Dentistas</a>
+      <a href="{% url 'DentalTech:relatorios' %}">Relatórios</a>
+      <a href="{% url 'DentalTech:configuracoes' %}">Configurações</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-name">Olá, {{ request.user.get_short_name|default:request.user.username }}</div>
+      <a href="{% url 'DentalTech:logout' %}">Sair</a>
+    </div>
   </aside>
   <main class="main">
     <header>
       <div>
         <p class="eyebrow">GESTÃO CLÍNICA</p>
-        <h1>{% block heading %}Olá{% endblock %}</h1>
-      </div>{% block header_action %}{% endblock %}
+        <h1>{% block heading %}{% endblock %}</h1>
+      </div>
+      {% block header_action %}{% endblock %}
     </header>
-    {% if messages %}{% for message in messages %}<div class="alert">{{ message }}</div>{% endfor %}{% endif %}
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert {{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
     {% block content %}{% endblock %}
   </main>
+{% else %}
+  {% if messages %}
+    <div class="login-messages">
+      {% for message in messages %}<div class="alert {{ message.tags }}">{{ message }}</div>{% endfor %}
+    </div>
+  {% endif %}
+  {% block public_content %}{% endblock %}
+{% endif %}
 </body>
-
 </html>

@@ -10,11 +10,13 @@ from django.utils.http import url_has_allowed_host_and_scheme
 
 from .forms import (
     AgendamentoForm,
+    CadastroForm,
     AtendimentoForm,
     AtendimentoProcedimentoFormSet,
     PacienteForm,
     ProfissionalForm,
 )
+
 from .models import (
     Agendamento,
     Atendimento,
@@ -60,15 +62,21 @@ def dashboard(request):
     ).select_related("paciente", "profissional")
 
     agendamentos_hoje = Agendamento.objects.filter(data=hoje)
+
     atendimentos_recentes = Atendimento.objects.select_related(
-        "agendamento__paciente", "profissional"
+        "agendamento__paciente",
+        "profissional",
     )
 
     if profissional:
-        proximos = proximos.filter(profissional=profissional)
+        proximos = proximos.filter(
+            profissional=profissional
+        )
+
         agendamentos_hoje = agendamentos_hoje.filter(
             profissional=profissional
         )
+
         atendimentos_recentes = atendimentos_recentes.filter(
             profissional=profissional
         )
@@ -83,13 +91,17 @@ def dashboard(request):
     else:
         total_pacientes = Paciente.objects.count()
 
-    return render(request, "DentalTech/dashboard.html", {
-        "total_pacientes": total_pacientes,
-        "agendamentos_hoje": agendamentos_hoje.count(),
-        "atendimentos_recentes": atendimentos_recentes,
-        "proximos_agendamentos": proximos,
-        "data_hoje": hoje,
-    })
+    return render(
+        request,
+        "DentalTech/dashboard.html",
+        {
+            "total_pacientes": total_pacientes,
+            "agendamentos_hoje": agendamentos_hoje.count(),
+            "atendimentos_recentes": atendimentos_recentes,
+            "proximos_agendamentos": proximos,
+            "data_hoje": hoje,
+        },
+    )
 
 
 def login_view(request):
@@ -99,15 +111,20 @@ def login_view(request):
     if request.method == "POST":
         username = request.POST.get("username", "").strip()
         password = request.POST.get("password", "")
+
         user = authenticate(
             request,
             username=username,
-            password=password
+            password=password,
         )
 
         if user is not None:
             login(request, user)
-            next_url = request.GET.get("next") or request.POST.get("next")
+
+            next_url = (
+                request.GET.get("next")
+                or request.POST.get("next")
+            )
 
             if next_url and url_has_allowed_host_and_scheme(
                 next_url,
@@ -117,14 +134,52 @@ def login_view(request):
 
             return redirect("DentalTech:dashboard")
 
-        messages.error(request, "Usuário ou senha inválidos.")
+        messages.error(
+            request,
+            "Usuário ou senha inválidos.",
+        )
 
-    return render(request, "DentalTech/login.html")
+    return render(
+        request,
+        "DentalTech/login.html",
+    )
+
+
+def cadastro_view(request):
+    if request.user.is_authenticated:
+        return redirect("DentalTech:dashboard")
+
+    if request.method == "POST":
+        form = CadastroForm(request.POST)
+
+        if form.is_valid():
+            user = form.save()
+
+            messages.success(
+                request,
+                f"Usuário {user.username} criado com sucesso! "
+                "Faça login para acessar o DentalTech.",
+            )
+
+            return redirect("DentalTech:login")
+    else:
+        form = CadastroForm()
+
+    return render(
+        request,
+        "DentalTech/cadastro.html",
+        {"form": form},
+    )
 
 
 def logout_view(request):
     logout(request)
-    messages.success(request, "Você saiu do DentalTech.")
+
+    messages.success(
+        request,
+        "Você saiu do DentalTech.",
+    )
+
     return redirect("DentalTech:login")
 
 
@@ -172,9 +227,11 @@ def paciente_detail(request, pk):
             pk=pk,
             agendamentos__profissional=profissional,
         )
+
         agendamentos = paciente.agendamentos.filter(
             profissional=profissional
         ).select_related("profissional")
+
     else:
         paciente = get_object_or_404(
             Paciente.objects.prefetch_related(
@@ -182,6 +239,7 @@ def paciente_detail(request, pk):
             ),
             pk=pk,
         )
+
         agendamentos = paciente.agendamentos.select_related(
             "profissional"
         )
@@ -202,11 +260,13 @@ def paciente_create(request):
 
     if form.is_valid():
         paciente = form.save()
+
         messages.success(
             request,
             "Paciente cadastrado com sucesso. "
             "Agora crie um agendamento para vinculá-lo ao dentista.",
         )
+
         return redirect(
             "DentalTech:paciente_detail",
             pk=paciente.pk,
@@ -233,7 +293,10 @@ def paciente_update(request, pk):
             agendamentos__profissional=profissional,
         )
     else:
-        paciente = get_object_or_404(Paciente, pk=pk)
+        paciente = get_object_or_404(
+            Paciente,
+            pk=pk,
+        )
 
     form = PacienteForm(
         request.POST or None,
@@ -242,10 +305,12 @@ def paciente_update(request, pk):
 
     if form.is_valid():
         form.save()
+
         messages.success(
             request,
             "Dados do paciente atualizados.",
         )
+
         return redirect(
             "DentalTech:paciente_detail",
             pk=paciente.pk,
@@ -277,17 +342,26 @@ def agendamento_list(request):
 
     data = request.GET.get("data", "")
     status = request.GET.get("status", "")
-    profissional_filtro = request.GET.get("profissional", "")
+    profissional_filtro = request.GET.get(
+        "profissional",
+        "",
+    )
 
     if data:
-        agendamentos = agendamentos.filter(data=data)
+        agendamentos = agendamentos.filter(
+            data=data
+        )
 
     if status:
-        agendamentos = agendamentos.filter(status=status)
+        agendamentos = agendamentos.filter(
+            status=status
+        )
 
-    # Apenas administradores podem escolher outro profissional no filtro.
     if profissional_logado:
-        profissional_filtro = str(profissional_logado.pk)
+        profissional_filtro = str(
+            profissional_logado.pk
+        )
+
     elif profissional_filtro:
         agendamentos = agendamentos.filter(
             profissional_id=profissional_filtro
@@ -312,7 +386,9 @@ def agendamento_list(request):
                 "status": status,
                 "profissional": profissional_filtro,
             },
-            "acesso_geral": usuario_tem_acesso_geral(request),
+            "acesso_geral": usuario_tem_acesso_geral(
+                request
+            ),
         },
     )
 
@@ -321,23 +397,34 @@ def agendamento_list(request):
 def agendamento_create(request):
     profissional_logado = get_profissional_logado(request)
 
-    if profissional_logado is None and not usuario_tem_acesso_geral(request):
+    if (
+        profissional_logado is None
+        and not usuario_tem_acesso_geral(request)
+    ):
         raise PermissionDenied
 
-    form = AgendamentoForm(request.POST or None)
+    form = AgendamentoForm(
+        request.POST or None
+    )
 
     if form.is_valid():
         agendamento = form.save(commit=False)
 
         if profissional_logado:
             agendamento.profissional = profissional_logado
+
         else:
-            profissional_id = request.POST.get("profissional")
+            profissional_id = request.POST.get(
+                "profissional"
+            )
+
             if not profissional_id:
                 form.add_error(
                     None,
-                    "Selecione o dentista responsável pelo agendamento.",
+                    "Selecione o dentista responsável "
+                    "pelo agendamento.",
                 )
+
                 return render(
                     request,
                     "DentalTech/agenda/form.html",
@@ -356,12 +443,15 @@ def agendamento_create(request):
             request,
             "Agendamento criado com sucesso.",
         )
-        return redirect("DentalTech:agenda")
 
-    # Para administrador, adicionamos o campo profissional no template
-    # sem alterar o ModelForm usado pelo dentista.
+        return redirect(
+            "DentalTech:agenda"
+        )
+
     if usuario_tem_acesso_geral(request):
-        profissionais = Profissional.objects.order_by("nome")
+        profissionais = Profissional.objects.order_by(
+            "nome"
+        )
     else:
         profissionais = None
 
@@ -372,14 +462,18 @@ def agendamento_create(request):
             "form": form,
             "titulo": "Novo agendamento",
             "profissionais": profissionais,
-            "acesso_geral": usuario_tem_acesso_geral(request),
+            "acesso_geral": usuario_tem_acesso_geral(
+                request
+            ),
         },
     )
 
 
 @login_required
 def agendamento_update(request, pk):
-    profissional_logado = get_profissional_logado(request)
+    profissional_logado = get_profissional_logado(
+        request
+    )
 
     if profissional_logado:
         agendamento = get_object_or_404(
@@ -399,11 +493,14 @@ def agendamento_update(request, pk):
     )
 
     if form.is_valid():
-        agendamento_atualizado = form.save(commit=False)
+        agendamento_atualizado = form.save(
+            commit=False
+        )
 
-        # Dentista não pode trocar o profissional responsável.
         if profissional_logado:
-            agendamento_atualizado.profissional = profissional_logado
+            agendamento_atualizado.profissional = (
+                profissional_logado
+            )
 
         agendamento_atualizado.save()
 
@@ -411,7 +508,10 @@ def agendamento_update(request, pk):
             request,
             "Agendamento atualizado.",
         )
-        return redirect("DentalTech:agenda")
+
+        return redirect(
+            "DentalTech:agenda"
+        )
 
     profissionais = (
         Profissional.objects.order_by("nome")
@@ -427,7 +527,9 @@ def agendamento_update(request, pk):
             "titulo": "Editar agendamento",
             "agendamento": agendamento,
             "profissionais": profissionais,
-            "acesso_geral": usuario_tem_acesso_geral(request),
+            "acesso_geral": usuario_tem_acesso_geral(
+                request
+            ),
         },
     )
 
@@ -454,15 +556,21 @@ def dentista_create(request):
             "Somente administradores podem cadastrar dentistas."
         )
 
-    form = ProfissionalForm(request.POST or None)
+    form = ProfissionalForm(
+        request.POST or None
+    )
 
     if form.is_valid():
         form.save()
+
         messages.success(
             request,
             "Dentista cadastrado com sucesso.",
         )
-        return redirect("DentalTech:dentistas")
+
+        return redirect(
+            "DentalTech:dentistas"
+        )
 
     return render(
         request,
@@ -493,11 +601,15 @@ def dentista_update(request, pk):
 
     if form.is_valid():
         form.save()
+
         messages.success(
             request,
             "Dentista atualizado com sucesso.",
         )
-        return redirect("DentalTech:dentistas")
+
+        return redirect(
+            "DentalTech:dentistas"
+        )
 
     return render(
         request,
@@ -511,7 +623,9 @@ def dentista_update(request, pk):
 
 @login_required
 def relatorios(request):
-    profissional = get_profissional_logado(request)
+    profissional = get_profissional_logado(
+        request
+    )
 
     if profissional:
         relatorios = Relatorio.objects.filter(
@@ -523,12 +637,15 @@ def relatorios(request):
         ).distinct().count()
 
         total_dentistas = 1
+
         total_agendamentos = Agendamento.objects.filter(
             profissional=profissional
         ).count()
+
         total_atendimentos = Atendimento.objects.filter(
             profissional=profissional
         ).count()
+
         agendamentos_pendentes = Agendamento.objects.filter(
             profissional=profissional,
             status__in=[
@@ -536,6 +653,7 @@ def relatorios(request):
                 Agendamento.Status.CONFIRMADA,
             ],
         ).count()
+
     else:
         relatorios = Relatorio.objects.select_related(
             "gerado_por"
@@ -545,6 +663,7 @@ def relatorios(request):
         total_dentistas = Profissional.objects.count()
         total_agendamentos = Agendamento.objects.count()
         total_atendimentos = Atendimento.objects.count()
+
         agendamentos_pendentes = Agendamento.objects.filter(
             status__in=[
                 Agendamento.Status.AGENDADA,
@@ -582,7 +701,9 @@ def configuracoes(request):
 
 @login_required
 def atendimento_create(request, agendamento_id):
-    profissional_logado = get_profissional_logado(request)
+    profissional_logado = get_profissional_logado(
+        request
+    )
 
     if profissional_logado:
         agendamento = get_object_or_404(
@@ -593,6 +714,7 @@ def atendimento_create(request, agendamento_id):
             pk=agendamento_id,
             profissional=profissional_logado,
         )
+
     else:
         agendamento = get_object_or_404(
             Agendamento.objects.select_related(
@@ -602,7 +724,11 @@ def atendimento_create(request, agendamento_id):
             pk=agendamento_id,
         )
 
-    atendimento = getattr(agendamento, "atendimento", None)
+    atendimento = getattr(
+        agendamento,
+        "atendimento",
+        None,
+    )
 
     if atendimento:
         return redirect(
@@ -610,12 +736,20 @@ def atendimento_create(request, agendamento_id):
             pk=atendimento.pk,
         )
 
-    form = AtendimentoForm(request.POST or None)
+    form = AtendimentoForm(
+        request.POST or None
+    )
 
     if form.is_valid():
-        atendimento = form.save(commit=False)
+        atendimento = form.save(
+            commit=False
+        )
+
         atendimento.agendamento = agendamento
-        atendimento.profissional = agendamento.profissional
+        atendimento.profissional = (
+            agendamento.profissional
+        )
+
         atendimento.save()
 
         messages.success(
@@ -641,7 +775,9 @@ def atendimento_create(request, agendamento_id):
 
 @login_required
 def atendimento_detail(request, pk):
-    profissional_logado = get_profissional_logado(request)
+    profissional_logado = get_profissional_logado(
+        request
+    )
 
     queryset = Atendimento.objects.select_related(
         "agendamento__paciente",
@@ -658,6 +794,7 @@ def atendimento_detail(request, pk):
             pk=pk,
             profissional=profissional_logado,
         )
+
     else:
         atendimento = get_object_or_404(
             queryset,
@@ -675,7 +812,9 @@ def atendimento_detail(request, pk):
 
 @login_required
 def atendimento_update(request, pk):
-    profissional_logado = get_profissional_logado(request)
+    profissional_logado = get_profissional_logado(
+        request
+    )
 
     if profissional_logado:
         atendimento = get_object_or_404(
@@ -683,6 +822,7 @@ def atendimento_update(request, pk):
             pk=pk,
             profissional=profissional_logado,
         )
+
     else:
         atendimento = get_object_or_404(
             Atendimento,
@@ -700,13 +840,14 @@ def atendimento_update(request, pk):
     )
 
     if form.is_valid() and formset.is_valid():
-        atendimento_atualizado = form.save(commit=False)
+        atendimento_atualizado = form.save(
+            commit=False
+        )
 
-        # O profissional vem do agendamento e não pode ser trocado
-        # pelo dentista através do formulário.
         atendimento_atualizado.profissional = (
             atendimento.agendamento.profissional
         )
+
         atendimento_atualizado.save()
 
         formset.instance = atendimento_atualizado
