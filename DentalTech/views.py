@@ -3,13 +3,13 @@ from datetime import date
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import UserCreationForm
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 
 from .forms import (
     AgendamentoForm,
+    CadastroForm,
     AtendimentoForm,
     AtendimentoProcedimentoFormSet,
     PacienteForm,
@@ -66,7 +66,7 @@ def cadastro_view(request):
         return redirect("DentalTech:dashboard")
 
     if request.method == "POST":
-        form = UserCreationForm(request.POST)
+        form = CadastroForm(request.POST)
         if form.is_valid():
             user = form.save()
             messages.success(
@@ -75,7 +75,7 @@ def cadastro_view(request):
             )
             return redirect("DentalTech:login")
     else:
-        form = UserCreationForm()
+        form = CadastroForm()
 
     return render(request, "DentalTech/cadastro.html", {"form": form})
 
