@@ -9,6 +9,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 
 from .forms import (
     AgendamentoForm,
+    CadastroForm,
     AtendimentoForm,
     AtendimentoProcedimentoFormSet,
     PacienteForm,
@@ -58,6 +59,25 @@ def login_view(request):
             return redirect("DentalTech:dashboard")
         messages.error(request, "Usuário ou senha inválidos.")
     return render(request, "DentalTech/login.html")
+
+
+def cadastro_view(request):
+    if request.user.is_authenticated:
+        return redirect("DentalTech:dashboard")
+
+    if request.method == "POST":
+        form = CadastroForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            messages.success(
+                request,
+                f"Usuário {user.username} criado com sucesso! Faça login para acessar o DentalTech."
+            )
+            return redirect("DentalTech:login")
+    else:
+        form = CadastroForm()
+
+    return render(request, "DentalTech/cadastro.html", {"form": form})
 
 
 def logout_view(request):

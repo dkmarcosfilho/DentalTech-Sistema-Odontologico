@@ -16,8 +16,27 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.contrib.auth import views as auth_views
 
 urlpatterns = [
+    path("senha/recuperar/", auth_views.PasswordResetView.as_view(
+        template_name="registration/password_reset_form.html",
+        email_template_name="registration/password_reset_email.html",
+        success_url="/senha/recuperar/enviado/",
+    ), name="password_reset"),
+    path("senha/recuperar/enviado/", auth_views.PasswordResetDoneView.as_view(
+        template_name="registration/password_reset_done.html",
+    ), name="password_reset_done"),
+    path("senha/nova/<uidb64>/<token>/", auth_views.PasswordResetConfirmView.as_view(
+        template_name="registration/password_reset_confirm.html",
+        success_url="/senha/nova/concluida/",
+    ), name="password_reset_confirm"),
+    path("senha/nova/concluida/", auth_views.PasswordResetCompleteView.as_view(
+        template_name="registration/password_reset_complete.html",
+    ), name="password_reset_complete"),
     path('admin/', admin.site.urls),
     path('', include('DentalTech.urls')),
 ]
+
+
+

@@ -6,6 +6,7 @@ app_name = "DentalTech"
 
 urlpatterns = [
     path("login/", views.login_view, name="login"),
+    path("cadastro/", views.cadastro_view, name="cadastro"),
     path("sair/", views.logout_view, name="logout"),
     path("", views.dashboard, name="dashboard"),
     path("pacientes/", views.paciente_list, name="pacientes"),
