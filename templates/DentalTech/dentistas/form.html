@@ -1,0 +1,19 @@
+{% extends "DentalTech/base.html" %}
+{% block title %}{{ titulo }} | DentalTech{% endblock %}
+{% block heading %}{{ titulo }}{% endblock %}
+{% block content %}
+<form method="post" class="card form-card">
+{% csrf_token %}
+{% if form.non_field_errors %}<div class="errors">{{ form.non_field_errors }}</div>{% endif %}
+{% for field in form %}
+<label>{{ field.label }}{% if field.field.required %} *{% endif %}
+{{ field }}
+{% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+</label>
+{% endfor %}
+<div class="form-actions">
+<a href="{% url 'DentalTech:dentistas' %}">Cancelar</a>
+<button type="submit" class="button">Salvar dentista</button>
+</div>
+</form>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "DentalTech/base.html" %}
+
+{% block title %}Relatórios{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1>Relatórios</h1>
+        <p>Consulte informações e dados da clínica.</p>
+    </div>
+</div>
+
+<div class="card">
+
+    <h2>Relatórios da clínica</h2>
+
+    <div class="report-grid">
+
+        <div class="report-card">
+            <h3>Pacientes</h3>
+            <p>Visualize os pacientes cadastrados no sistema.</p>
+            <a href="{% url 'DentalTech:pacientes' %}" class="btn btn-primary">
+                Ver pacientes
+            </a>
+        </div>
+
+        <div class="report-card">
+            <h3>Agendamentos</h3>
+            <p>Consulte os agendamentos registrados na clínica.</p>
+            <a href="{% url 'DentalTech:agenda' %}" class="btn btn-primary">
+                Ver agenda
+            </a>
+        </div>
+
+        <div class="report-card">
+            <h3>Dentistas</h3>
+            <p>Consulte os profissionais cadastrados.</p>
+            <a href="{% url 'DentalTech:dentistas' %}" class="btn btn-primary">
+                Ver dentistas
+            </a>
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
