@@ -130,4 +130,3 @@ MAILERS = {
 LOGIN_URL = "DentalTech:login"
 LOGIN_REDIRECT_URL = "DentalTech:dashboard"
 LOGOUT_REDIRECT_URL = "DentalTech:login"
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

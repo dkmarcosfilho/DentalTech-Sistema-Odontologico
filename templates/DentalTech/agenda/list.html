@@ -1,7 +1,7 @@
 {% extends "DentalTech/base.html" %}
 
 {% block title %}
-    Agenda | DentalTech
+    Agenda | Harmoniê
 {% endblock %}
 
 {% block heading %}
@@ -10,7 +10,8 @@
 
 {% block header_action %}
     <a class="button" href="{% url 'DentalTech:agendamento_create' %}">
-        + Novo agendamento
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Novo agendamento
     </a>
 {% endblock %}
 
@@ -88,7 +89,7 @@
                 <th>Paciente</th>
                 <th>Profissional</th>
                 <th>Status</th>
-                <th></th>
+                <th class="actions"></th>
             </tr>
         </thead>
 
@@ -111,16 +112,21 @@
 
                     <td>
 
-                        <a
-                            class="link"
-                            href="{% url 'DentalTech:paciente_detail' item.paciente.pk %}"
-                        >
-                            {{ item.paciente.nome }}
-                        </a>
+                        <div class="cell-person">
+                            <span class="avatar">{{ item.paciente.nome|first|upper }}</span>
+                            <div>
+                                <a
+                                    class="link"
+                                    href="{% url 'DentalTech:paciente_detail' item.paciente.pk %}"
+                                >
+                                    {{ item.paciente.nome }}
+                                </a>
 
-                        <small>
-                            {{ item.motivo|default:"Consulta odontológica" }}
-                        </small>
+                                <small>
+                                    {{ item.motivo|default:"Consulta odontológica" }}
+                                </small>
+                            </div>
+                        </div>
 
                     </td>
 
@@ -139,40 +145,29 @@
                     </td>
 
 
-                    <td>
+                    <td class="actions">
 
-                        <a
-                            href="{% url 'DentalTech:agendamento_update' item.pk %}"
-                        >
-                            Editar
-                        </a>
+                        <div class="row-actions">
 
+                            <a href="{% url 'DentalTech:agendamento_update' item.pk %}">
+                                Editar
+                            </a>
 
-                        {% if item.status != "CANCELADA" %}
+                            {% if item.status != "CANCELADA" %}
 
-                            {% if item.atendimento %}
-
-                                ·
-
-                                <a
-                                    href="{% url 'DentalTech:atendimento_detail' item.atendimento.pk %}"
-                                >
-                                    Atendimento
-                                </a>
-
-                            {% else %}
-
-                                ·
-
-                                <a
-                                    href="{% url 'DentalTech:atendimento_create' item.pk %}"
-                                >
-                                    Registrar
-                                </a>
+                                {% if item.atendimento %}
+                                    <a href="{% url 'DentalTech:atendimento_detail' item.atendimento.pk %}">
+                                        Atendimento
+                                    </a>
+                                {% else %}
+                                    <a class="primary" href="{% url 'DentalTech:atendimento_create' item.pk %}">
+                                        Registrar
+                                    </a>
+                                {% endif %}
 
                             {% endif %}
 
-                        {% endif %}
+                        </div>
 
                     </td>
 

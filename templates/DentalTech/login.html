@@ -1,6 +1,8 @@
 {% extends "DentalTech/base.html" %}
+{% load static %}
 
-{% block title %}Entrar | DentalTech{% endblock %}
+
+{% block title %}Entrar | Harmoniê{% endblock %}
 
 {% block public_content %}
 
@@ -9,7 +11,7 @@
     <div class="auth-card">
 
         <div class="login-brand">
-            Dental<span>Tech</span>
+            <img src="{% static 'DentalTech/harmonie-logo.png' %}" alt="Harmoniê">
         </div>
 
         <p class="eyebrow">SISTEMA ODONTOLÓGICO</p>
@@ -74,7 +76,7 @@
         </div>
 
         <p class="login-help">
-            Crie sua conta para acessar o sistema DentalTech.
+            Crie sua conta para acessar o sistema Harmoniê.
         </p>
 
     </div>

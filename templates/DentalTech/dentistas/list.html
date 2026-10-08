@@ -1,25 +1,56 @@
 {% extends "DentalTech/base.html" %}
-{% block title %}Dentistas | DentalTech{% endblock %}
+
+{% block title %}Dentistas | Harmoniê{% endblock %}
+
 {% block heading %}Dentistas{% endblock %}
-{% block header_action %}<a class="button" href="{% url 'DentalTech:dentista_create' %}">+ Novo dentista</a>{% endblock %}
+
+{% block header_action %}
+    <a class="button" href="{% url 'DentalTech:dentista_create' %}">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Novo dentista
+    </a>
+{% endblock %}
+
 {% block content %}
 <div class="card table-wrap">
-<table>
-<thead><tr><th>Nome</th><th>CRO</th><th>Especialidade</th><th>Telefone</th><th>E-mail</th><th></th></tr></thead>
-<tbody>
-{% for profissional in profissionais %}
-<tr>
-<td><strong>{{ profissional.nome }}</strong></td>
-<td>{{ profissional.cro }}</td>
-<td>{{ profissional.especialidade|default:"—" }}</td>
-<td>{{ profissional.telefone|default:"—" }}</td>
-<td>{{ profissional.email|default:"—" }}</td>
-<td><a href="{% url 'DentalTech:dentista_update' profissional.pk %}">Editar</a></td>
-</tr>
-{% empty %}
-<tr><td colspan="6" class="empty">Nenhum dentista cadastrado. Cadastre o primeiro para liberar os agendamentos.</td></tr>
-{% endfor %}
-</tbody>
-</table>
+    <table>
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>CRO</th>
+                <th>Especialidade</th>
+                <th>Contato</th>
+                <th class="actions"></th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for profissional in profissionais %}
+                <tr>
+                    <td>
+                        <div class="cell-person">
+                            <span class="avatar">{{ profissional.nome|first|upper }}</span>
+                            <strong>{{ profissional.nome }}</strong>
+                        </div>
+                    </td>
+                    <td>{{ profissional.cro }}</td>
+                    <td>{{ profissional.especialidade|default:"—" }}</td>
+                    <td>
+                        {{ profissional.telefone|default:"—" }}
+                        <small>{{ profissional.email|default:"—" }}</small>
+                    </td>
+                    <td class="actions">
+                        <div class="row-actions">
+                            <a href="{% url 'DentalTech:dentista_update' profissional.pk %}">Editar</a>
+                        </div>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5" class="empty">Nenhum dentista cadastrado. Cadastre o primeiro para liberar os agendamentos.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}

@@ -1,50 +1,47 @@
 {% extends "DentalTech/base.html" %}
 
-{% block title %}
-    Dashboard | DentalTech
-{% endblock %}
+{% block title %}Dashboard | Harmoniê{% endblock %}
 
-{% block heading %}
-    Visão geral
-{% endblock %}
+{% block heading %}Visão geral{% endblock %}
 
 {% block header_action %}
     <a class="button" href="{% url 'DentalTech:agendamento_create' %}">
-        + Novo agendamento
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Novo agendamento
     </a>
 {% endblock %}
 
 {% block content %}
-    <p class="muted">
-        Resumo da clínica para {{ data_hoje|date:"d \d\e F" }}.
+    <p class="page-intro">
+        Resumo da clínica para <strong>{{ data_hoje|date:"d \d\e F" }}</strong>.
     </p>
 
     <section class="stats">
         <div class="stat">
+            <div class="stat-icon">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
             <span>Pacientes</span>
             <strong>{{ total_pacientes }}</strong>
-
-            <a href="{% url 'DentalTech:pacientes' %}">
-                Ver cadastro →
-            </a>
+            <a href="{% url 'DentalTech:pacientes' %}">Ver cadastro →</a>
         </div>
 
         <div class="stat">
+            <div class="stat-icon">
+                <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
+            </div>
             <span>Agenda de hoje</span>
             <strong>{{ agendamentos_hoje }}</strong>
-
-            <a href="{% url 'DentalTech:agenda' %}?data={{ data_hoje|date:'Y-m-d' }}">
-                Abrir agenda →
-            </a>
+            <a href="{% url 'DentalTech:agenda' %}?data={{ data_hoje|date:'Y-m-d' }}">Abrir agenda →</a>
         </div>
 
         <div class="stat">
+            <div class="stat-icon">
+                <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            </div>
             <span>Próximos horários</span>
             <strong>{{ proximos_agendamentos|length }}</strong>
-
-            <a href="{% url 'DentalTech:agenda' %}">
-                Ver agenda →
-            </a>
+            <a href="{% url 'DentalTech:agenda' %}">Ver agenda →</a>
         </div>
     </section>
 
@@ -52,36 +49,26 @@
         <div class="card">
             <div class="card-title">
                 <h2>Próximos horários</h2>
-
-                <a href="{% url 'DentalTech:agenda' %}">
-                    Ver todos
-                </a>
+                <a href="{% url 'DentalTech:agenda' %}">Ver todos</a>
             </div>
 
             {% for item in proximos_agendamentos %}
                 <div class="appointment">
-                    <time>
-                        {{ item.horario|time:"H:i" }}
-                    </time>
+                    <time>{{ item.horario|time:"H:i" }}</time>
 
                     <div>
                         <b>{{ item.paciente.nome }}</b>
-
                         <small>
-                            {{ item.motivo|default:"Consulta odontológica" }}
-                            ·
+                            {{ item.data|date:"d/m" }} ·
+                            {{ item.motivo|default:"Consulta odontológica" }} ·
                             {{ item.profissional.nome }}
                         </small>
                     </div>
 
-                    <span class="badge {{ item.status|lower }}">
-                        {{ item.get_status_display }}
-                    </span>
+                    <span class="badge {{ item.status|lower }}">{{ item.get_status_display }}</span>
                 </div>
             {% empty %}
-                <p class="empty">
-                    Nenhum horário futuro encontrado.
-                </p>
+                <p class="empty">Nenhum horário futuro encontrado.</p>
             {% endfor %}
         </div>
 
@@ -92,28 +79,19 @@
 
             {% for item in atendimentos_recentes %}
                 <div class="list-row">
-                    <div class="avatar">
-                        {{ item.agendamento.paciente.nome|first|upper }}
-                    </div>
+                    <div class="avatar">{{ item.agendamento.paciente.nome|first|upper }}</div>
 
                     <div>
                         <b>{{ item.agendamento.paciente.nome }}</b>
-
                         <small>
-                            {{ item.data|date:"d/m/Y H:i" }}
-                            ·
-                            {{ item.profissional.nome }}
+                            {{ item.data|date:"d/m/Y H:i" }} · {{ item.profissional.nome }}
                         </small>
                     </div>
 
-                    <span class="badge concluido">
-                        {{ item.get_status_display }}
-                    </span>
+                    <span class="badge {{ item.status|lower }}">{{ item.get_status_display }}</span>
                 </div>
             {% empty %}
-                <p class="empty">
-                    Os atendimentos registrados aparecerão aqui.
-                </p>
+                <p class="empty">Os atendimentos registrados aparecerão aqui.</p>
             {% endfor %}
         </div>
     </section>
