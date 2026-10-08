@@ -1,48 +1,69 @@
 {% extends "DentalTech/base.html" %}
 
-{% block title %}Relatórios{% endblock %}
+{% block title %}Relatórios | Harmoniê{% endblock %}
+
+{% block heading %}Relatórios{% endblock %}
 
 {% block content %}
 
-<div class="page-header">
-    <div>
-        <h1>Relatórios</h1>
-        <p>Consulte informações e dados da clínica.</p>
+<p class="page-intro">Consulte informações e dados da clínica.</p>
+
+<section class="stats">
+    <div class="stat">
+        <span>Pacientes</span>
+        <strong>{{ total_pacientes }}</strong>
     </div>
-</div>
+    <div class="stat">
+        <span>Dentistas</span>
+        <strong>{{ total_dentistas }}</strong>
+    </div>
+    <div class="stat">
+        <span>Agendamentos</span>
+        <strong>{{ total_agendamentos }}</strong>
+    </div>
+    <div class="stat">
+        <span>Atendimentos</span>
+        <strong>{{ total_atendimentos }}</strong>
+    </div>
+    <div class="stat">
+        <span>Pendentes</span>
+        <strong>{{ agendamentos_pendentes }}</strong>
+    </div>
+</section>
 
 <div class="card">
-
-    <h2>Relatórios da clínica</h2>
+    <h2>Acesso rápido</h2>
 
     <div class="report-grid">
 
         <div class="report-card">
+            <div class="stat-icon">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
             <h3>Pacientes</h3>
             <p>Visualize os pacientes cadastrados no sistema.</p>
-            <a href="{% url 'DentalTech:pacientes' %}" class="btn btn-primary">
-                Ver pacientes
-            </a>
+            <a href="{% url 'DentalTech:pacientes' %}" class="button small">Ver pacientes</a>
         </div>
 
         <div class="report-card">
+            <div class="stat-icon">
+                <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
+            </div>
             <h3>Agendamentos</h3>
             <p>Consulte os agendamentos registrados na clínica.</p>
-            <a href="{% url 'DentalTech:agenda' %}" class="btn btn-primary">
-                Ver agenda
-            </a>
+            <a href="{% url 'DentalTech:agenda' %}" class="button small">Ver agenda</a>
         </div>
 
         <div class="report-card">
+            <div class="stat-icon">
+                <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+            </div>
             <h3>Dentistas</h3>
             <p>Consulte os profissionais cadastrados.</p>
-            <a href="{% url 'DentalTech:dentistas' %}" class="btn btn-primary">
-                Ver dentistas
-            </a>
+            <a href="{% url 'DentalTech:dentistas' %}" class="button small">Ver dentistas</a>
         </div>
 
     </div>
-
 </div>
 
 {% endblock %}

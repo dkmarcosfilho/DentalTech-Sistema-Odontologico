@@ -1,6 +1,8 @@
 {% extends "DentalTech/base.html" %}
 
-{% block title %}Cadastro | DentalTech{% endblock %}
+{% load static %}
+
+{% block title %}Cadastro | Harmoniê{% endblock %}
 
 {% block public_content %}
 
@@ -9,7 +11,7 @@
     <div class="auth-card">
 
         <div class="login-brand">
-            Dental<span>Tech</span>
+            <img src="{% static 'DentalTech/harmonie-logo.png' %}" alt="Harmoniê">
         </div>
 
         <p class="eyebrow">NOVO ACESSO</p>
@@ -42,13 +44,13 @@
                 {% endif %}
 
                 <small>
-                    Use um nome de usuário para entrar no DentalTech.
+                    Use um nome de usuário para entrar no Harmoniê.
                 </small>
             </label>
 
             <label>
                 <span class="field-label">
-                    E-mail <span class="optional">(opcional)</span>
+                    E-mail
                 </span>
 
                 {{ form.email }}

@@ -1,31 +1,31 @@
 {% extends "DentalTech/base.html" %}
 
-{% block title %}
-    Pacientes | DentalTech
-{% endblock %}
+{% block title %}Pacientes | Harmoniê{% endblock %}
 
-{% block heading %}
-    Pacientes
-{% endblock %}
+{% block heading %}Pacientes{% endblock %}
 
 {% block header_action %}
     <a class="button" href="{% url 'DentalTech:paciente_create' %}">
-        + Novo paciente
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Novo paciente
     </a>
 {% endblock %}
 
 {% block content %}
 
 <form class="toolbar" method="get">
-    <input
-        name="q"
-        value="{{ termo }}"
-        placeholder="Buscar por nome, CPF, telefone ou e-mail"
-    >
+    <div class="search-field">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input
+            type="search"
+            name="q"
+            value="{{ termo }}"
+            placeholder="Buscar por nome, CPF, telefone ou e-mail"
+            aria-label="Buscar pacientes"
+        >
+    </div>
 
-    <button class="button secondary">
-        Buscar
-    </button>
+    <button class="button secondary" type="submit">Buscar</button>
 </form>
 
 <div class="card table-wrap">
@@ -35,7 +35,7 @@
                 <th>Paciente</th>
                 <th>Contato</th>
                 <th>Nascimento</th>
-                <th></th>
+                <th class="actions"></th>
             </tr>
         </thead>
 
@@ -43,44 +43,34 @@
             {% for paciente in pacientes %}
                 <tr>
                     <td>
-                        <a
-                            class="link"
-                            href="{% url 'DentalTech:paciente_detail' paciente.pk %}"
-                        >
-                            <b>{{ paciente.nome }}</b>
-                        </a>
-
-                        <small>
-                            {{ paciente.cpf }}
-                        </small>
+                        <div class="cell-person">
+                            <span class="avatar">{{ paciente.nome|first|upper }}</span>
+                            <div>
+                                <a class="link" href="{% url 'DentalTech:paciente_detail' paciente.pk %}">
+                                    <b>{{ paciente.nome }}</b>
+                                </a>
+                                <small>{{ paciente.cpf }}</small>
+                            </div>
+                        </div>
                     </td>
 
                     <td>
                         {{ paciente.telefone }}
-
-                        <small>
-                            {{ paciente.email|default:"Sem e-mail" }}
-                        </small>
+                        <small>{{ paciente.email|default:"Sem e-mail" }}</small>
                     </td>
 
-                    <td>
-                        {{ paciente.data_nascimento|date:"d/m/Y" }}
-                    </td>
+                    <td>{{ paciente.data_nascimento|date:"d/m/Y" }}</td>
 
-                    <td>
-                        <a
-                            href="{% url 'DentalTech:paciente_update' paciente.pk %}"
-                        >
-                            Editar
-                        </a>
+                    <td class="actions">
+                        <div class="row-actions">
+                            <a href="{% url 'DentalTech:paciente_detail' paciente.pk %}">Ver</a>
+                            <a href="{% url 'DentalTech:paciente_update' paciente.pk %}">Editar</a>
+                        </div>
                     </td>
                 </tr>
-
             {% empty %}
                 <tr>
-                    <td colspan="4" class="empty">
-                        Nenhum paciente encontrado.
-                    </td>
+                    <td colspan="4" class="empty">Nenhum paciente encontrado.</td>
                 </tr>
             {% endfor %}
         </tbody>

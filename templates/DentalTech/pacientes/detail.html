@@ -1,99 +1,77 @@
 {% extends "DentalTech/base.html" %}
 
-{% block title %}
-    Atendimento | DentalTech
-{% endblock %}
+{% block title %}{{ paciente.nome }} | Harmoniê{% endblock %}
 
-{% block heading %}
-    Atendimento de {{ atendimento.agendamento.paciente.nome }}
-{% endblock %}
+{% block heading %}{{ paciente.nome }}{% endblock %}
 
-{% if atendimento %}
-<a
-    class="button secondary"
-    href="{% url 'DentalTech:atendimento_update' atendimento.pk %}"
->
-    Editar atendimento
-</a>
-{% endif %}
+{% block header_action %}
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <a class="button secondary" href="{% url 'DentalTech:paciente_update' paciente.pk %}">Editar paciente</a>
+        <a class="button" href="{% url 'DentalTech:agendamento_create' %}">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            Novo agendamento
+        </a>
+    </div>
+{% endblock %}
 
 {% block content %}
-
 <div class="grid-two">
 
     <div class="card">
-        <h2>Registro clínico</h2>
+        <div class="profile-head">
+            <span class="avatar lg">{{ paciente.nome|first|upper }}</span>
+            <div>
+                <h2>{{ paciente.nome }}</h2>
+                <small>Cadastrado em {{ paciente.data_cadastro|date:"d/m/Y" }}</small>
+            </div>
+        </div>
 
+        <h3>Dados pessoais</h3>
         <dl>
-            <dt>Data</dt>
-            <dd>
-                {{ atendimento.data|date:"d/m/Y H:i" }}
-            </dd>
+            <dt>CPF</dt>
+            <dd>{{ paciente.cpf }}</dd>
 
-            <dt>Profissional</dt>
-            <dd>
-                {{ atendimento.profissional.nome }}
-            </dd>
+            <dt>Nascimento</dt>
+            <dd>{{ paciente.data_nascimento|date:"d/m/Y" }}</dd>
 
-            <dt>Status</dt>
-            <dd>
-                <span class="badge concluido">
-                    {{ atendimento.get_status_display }}
-                </span>
-            </dd>
+            <dt>Telefone</dt>
+            <dd>{{ paciente.telefone }}</dd>
+
+            <dt>E-mail</dt>
+            <dd>{{ paciente.email|default:"—" }}</dd>
+
+            <dt>Endereço</dt>
+            <dd>{{ paciente.endereco|default:"—" }}</dd>
         </dl>
 
-        <h3>Descrição</h3>
-        <p>
-            {{ atendimento.descricao|linebreaksbr }}
-        </p>
-
-        {% if atendimento.diagnostico %}
-            <h3>Diagnóstico</h3>
-            <p>
-                {{ atendimento.diagnostico|linebreaksbr }}
-            </p>
-        {% endif %}
-
-        {% if atendimento.observacoes %}
+        {% if paciente.observacoes %}
             <h3>Observações</h3>
-            <p>
-                {{ atendimento.observacoes|linebreaksbr }}
-            </p>
+            <p>{{ paciente.observacoes|linebreaksbr }}</p>
         {% endif %}
     </div>
 
     <div class="card">
-        <h2>Procedimentos</h2>
+        <div class="card-title">
+            <h2>Histórico de agendamentos</h2>
+        </div>
 
-        {% for item in atendimento.procedimentos.all %}
-            <div class="list-row">
+        {% for item in agendamentos %}
+            <div class="appointment">
+                <time>{{ item.horario|time:"H:i" }}</time>
+
                 <div>
-                    <b>
-                        {{ item.procedimento.nome }}
-                    </b>
-
+                    <b>{{ item.data|date:"d/m/Y" }}</b>
                     <small>
-                        {% if item.dente %}
-                            Dente {{ item.dente.numero }} ·
-                        {% endif %}
-
-                        {{ item.observacoes|default:"Sem observações" }}
+                        {{ item.motivo|default:"Consulta odontológica" }} · {{ item.profissional.nome }}
                     </small>
                 </div>
 
-                <strong>
-                    R$ {{ item.procedimento.valor|floatformat:2 }}
-                </strong>
+                <span class="badge {{ item.status|lower }}">{{ item.get_status_display }}</span>
             </div>
-
         {% empty %}
-            <p class="empty">
-                Nenhum procedimento vinculado.
-            </p>
+            <p class="empty">Nenhum agendamento registrado para este paciente.</p>
         {% endfor %}
     </div>
 
 </div>
-
 {% endblock %}
