@@ -7,6 +7,7 @@
 {% block header_action %}
     <div style="display:flex; gap:10px; flex-wrap:wrap;">
         <a class="button secondary" href="{% url 'DentalTech:paciente_update' paciente.pk %}">Editar paciente</a>
+        <a class="button secondary danger-outline" href="{% url 'DentalTech:paciente_delete' paciente.pk %}">Excluir</a>
         <a class="button" href="{% url 'DentalTech:agendamento_create' %}">
             <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
             Novo agendamento

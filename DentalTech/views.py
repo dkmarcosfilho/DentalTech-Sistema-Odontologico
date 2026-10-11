@@ -326,6 +326,86 @@ def paciente_update(request, pk):
         },
     )
 
+@login_required
+def paciente_delete(request, pk):
+    """Exclui um paciente após confirmar os impactos no histórico."""
+    profissional = get_profissional_logado(request)
+
+    # Administradores veem todos os pacientes; dentistas só os vinculados
+    # a pelo menos um agendamento próprio.
+    pacientes = Paciente.objects.all()
+    if profissional:
+        pacientes = pacientes.filter(
+            agendamentos__profissional=profissional
+        ).distinct()
+
+    paciente = get_object_or_404(pacientes, pk=pk)
+    agendamentos = paciente.agendamentos.all()
+
+    # Um dentista não pode apagar um paciente que também tenha consultas
+    # com outros dentistas.
+    if profissional and agendamentos.exclude(
+        profissional=profissional
+    ).exists():
+        messages.error(
+            request,
+            "Este paciente tem agendamentos com outros dentistas. "
+            "Somente um administrador pode excluí-lo.",
+        )
+        return redirect("DentalTech:paciente_detail", pk=paciente.pk)
+
+    atendimentos = Atendimento.objects.filter(
+        agendamento__paciente=paciente
+    )
+    total_agendamentos = agendamentos.count()
+    total_atendimentos = atendimentos.count()
+    impactos = []
+
+    if total_agendamentos:
+        impactos.append(f"{total_agendamentos} agendamento(s)")
+    if total_atendimentos:
+        impactos.append(
+            f"{total_atendimentos} atendimento(s) registrado(s)"
+        )
+
+    if request.method == "POST":
+        if impactos and not request.POST.get("confirmar_historico"):
+            messages.error(
+                request,
+                "Marque a confirmação para excluir o paciente junto com o histórico.",
+            )
+        else:
+            nome = paciente.nome
+            try:
+                with transaction.atomic():
+                    # Atendimento protege o agendamento (PROTECT), por isso
+                    # o histórico de atendimento é removido primeiro.
+                    atendimentos.delete()
+                    paciente.delete()
+            except ProtectedError:
+                messages.error(
+                    request,
+                    "Não foi possível excluir este paciente porque existem "
+                    "registros relacionados que precisam ser tratados primeiro.",
+                )
+            else:
+                messages.success(request, f"Paciente {nome} excluído.")
+                return redirect("DentalTech:pacientes")
+
+    return render(
+        request,
+        "DentalTech/confirm_delete.html",
+        {
+            "titulo": "Excluir paciente",
+            "objeto": paciente.nome,
+            "descricao": "Os dados cadastrais do paciente serão removidos.",
+            "impactos": impactos,
+            "cancel_url": "DentalTech:paciente_detail",
+            "cancel_pk": paciente.pk,
+        },
+    )
+
+
 
 @login_required
 def agendamento_list(request):
