@@ -29,6 +29,11 @@ urlpatterns = [
         views.paciente_update,
         name="paciente_update",
     ),
+    path(
+        "pacientes/<int:pk>/excluir/",
+        views.paciente_delete,
+        name="paciente_delete",
+    ),
 
     # Agenda
     path("agenda/", views.agendamento_list, name="agenda"),

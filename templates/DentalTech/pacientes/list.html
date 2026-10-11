@@ -65,6 +65,7 @@
                         <div class="row-actions">
                             <a href="{% url 'DentalTech:paciente_detail' paciente.pk %}">Ver</a>
                             <a href="{% url 'DentalTech:paciente_update' paciente.pk %}">Editar</a>
+                            <a class="danger" href="{% url 'DentalTech:paciente_delete' paciente.pk %}">Excluir</a>
                         </div>
                     </td>
                 </tr>
