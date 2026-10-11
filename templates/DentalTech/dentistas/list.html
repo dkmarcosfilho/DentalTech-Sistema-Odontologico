@@ -5,10 +5,12 @@
 {% block heading %}Dentistas{% endblock %}
 
 {% block header_action %}
+    {% if acesso_geral %}
     <a class="button" href="{% url 'DentalTech:dentista_create' %}">
         <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
         Novo dentista
     </a>
+    {% endif %}
 {% endblock %}
 
 {% block content %}
@@ -41,7 +43,10 @@
                     </td>
                     <td class="actions">
                         <div class="row-actions">
+                            {% if acesso_geral %}
                             <a href="{% url 'DentalTech:dentista_update' profissional.pk %}">Editar</a>
+                            <a class="danger" href="{% url 'DentalTech:dentista_delete' profissional.pk %}">Excluir</a>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
