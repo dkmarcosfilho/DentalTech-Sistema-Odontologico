@@ -55,6 +55,11 @@ urlpatterns = [
         views.dentista_update,
         name="dentista_update",
     ),
+    path(
+        "dentistas/<int:pk>/excluir/",
+        views.dentista_delete,
+        name="dentista_delete",
+    ),
 
     # Relatórios e configurações
     path(

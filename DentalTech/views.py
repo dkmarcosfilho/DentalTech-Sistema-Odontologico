@@ -4,7 +4,8 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.db.models import Q
+from django.db import transaction
+from django.db.models import ProtectedError, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 
@@ -545,6 +546,7 @@ def dentistas(request):
         "DentalTech/dentistas/list.html",
         {
             "profissionais": profissionais,
+            "acesso_geral": usuario_tem_acesso_geral(request),
         },
     )
 
@@ -617,6 +619,83 @@ def dentista_update(request, pk):
         {
             "form": form,
             "titulo": "Editar dentista",
+        },
+    )
+
+
+@login_required
+def dentista_delete(request, pk):
+    if not usuario_tem_acesso_geral(request):
+        raise PermissionDenied(
+            "Somente administradores podem excluir dentistas."
+        )
+
+    profissional = get_object_or_404(
+        Profissional.objects.select_related("usuario"),
+        pk=pk,
+    )
+
+    agendamentos = profissional.agendamentos.all()
+    atendimentos = Atendimento.objects.filter(
+        Q(profissional=profissional)
+        | Q(agendamento__profissional=profissional)
+    )
+    usuario = profissional.usuario
+    remove_usuario = bool(
+        usuario and not (usuario.is_staff or usuario.is_superuser)
+    )
+
+    total_agendamentos = agendamentos.count()
+    total_atendimentos = atendimentos.count()
+    impactos = []
+
+    if total_agendamentos:
+        impactos.append(f"{total_agendamentos} agendamento(s)")
+    if total_atendimentos:
+        impactos.append(f"{total_atendimentos} atendimento(s) registrado(s)")
+
+    if request.method == "POST":
+        if impactos and not request.POST.get("confirmar_historico"):
+            messages.error(
+                request,
+                "Marque a confirmação para excluir o dentista "
+                "junto com o histórico.",
+            )
+        else:
+            nome = profissional.nome
+            with transaction.atomic():
+                atendimentos.delete()
+                agendamentos.delete()
+                profissional.delete()
+
+                if remove_usuario:
+                    try:
+                        usuario.delete()
+                    except ProtectedError:
+                        # Usuário tem relatórios gerados: não apaga,
+                        # só impede o acesso.
+                        usuario.is_active = False
+                        usuario.save(update_fields=["is_active"])
+
+            messages.success(request, f"Dentista {nome} excluído.")
+            return redirect("DentalTech:dentistas")
+
+    descricao = "O cadastro do dentista será removido."
+    if remove_usuario:
+        descricao += (
+            f" O login \"{usuario.get_username()}\" vinculado a ele "
+            "também será removido."
+        )
+
+    return render(
+        request,
+        "DentalTech/confirm_delete.html",
+        {
+            "titulo": "Excluir dentista",
+            "objeto": profissional.nome,
+            "descricao": descricao,
+            "impactos": impactos,
+            "cancel_url": "DentalTech:dentistas",
         },
     )
 

@@ -3,6 +3,7 @@
 /* ==========================================================
    HARMONIÊ — Design tokens
    ========================================================== */
+
 :root {
     --off-white: #F6F2EB;
     --sand: #E2D6C3;
@@ -15,13 +16,11 @@
     --white: #FFFFFF;
     --warm-gray: #E9E3DB;
     --taupe: #D0C7BF;
-
     --ink: #4B3627;
     --muted: #806F5E;
     --line: #EDE6DC;
     --bg: #F6F2EB;
     --surface: #FFFFFF;
-
     --success-bg: #E6EFE3;
     --success: #4A6B3F;
     --warning-bg: #F7ECD3;
@@ -30,18 +29,14 @@
     --danger: #9A4A31;
     --info-bg: #E8DCCB;
     --info: #71543B;
-
     --radius-sm: 8px;
     --radius: 12px;
     --radius-lg: 18px;
-
     --shadow-sm: 0 1px 2px rgba(75, 54, 39, .06);
     --shadow: 0 8px 28px rgba(75, 54, 39, .07);
     --shadow-lg: 0 20px 60px rgba(75, 54, 39, .16);
-
     --sidebar-w: 248px;
     --ease: cubic-bezier(.2, .7, .2, 1);
-
     /* compatibilidade com nomes antigos */
     --teal: var(--gold);
     --dark: var(--brown);
@@ -140,9 +135,11 @@ small {
     text-transform: uppercase;
 }
 
+
 /* ==========================================================
    ÍCONES
    ========================================================== */
+
 .icon {
     width: 18px;
     height: 18px;
@@ -154,9 +151,11 @@ small {
     stroke-linejoin: round;
 }
 
+
 /* ==========================================================
    SIDEBAR
    ========================================================== */
+
 .sidebar {
     position: fixed;
     inset: 0 auto 0 0;
@@ -300,7 +299,9 @@ small {
     color: #fff;
 }
 
+
 /* topbar mobile */
+
 .mobile-bar {
     display: none;
 }
@@ -313,9 +314,11 @@ small {
     display: none;
 }
 
+
 /* ==========================================================
    LAYOUT PRINCIPAL
    ========================================================== */
+
 .main {
     margin-left: var(--sidebar-w);
     padding: 40px clamp(20px, 4vw, 56px) 64px;
@@ -344,9 +347,11 @@ small {
     margin-bottom: 24px;
 }
 
+
 /* ==========================================================
    BOTÕES
    ========================================================== */
+
 .button,
 .btn {
     display: inline-flex;
@@ -401,9 +406,11 @@ small {
     border-radius: 8px;
 }
 
+
 /* ==========================================================
    CARDS
    ========================================================== */
+
 .card,
 .stat {
     background: var(--surface);
@@ -516,7 +523,9 @@ small {
     align-items: start;
 }
 
+
 /* Listas */
+
 .appointment,
 .list-row {
     display: flex;
@@ -591,7 +600,9 @@ small {
     margin-top: 1px;
 }
 
+
 /* Badges */
+
 .badge {
     display: inline-flex;
     align-items: center;
@@ -642,7 +653,9 @@ small {
     color: var(--warning);
 }
 
+
 /* Toolbars e filtros */
+
 .toolbar,
 .filters {
     display: flex;
@@ -691,7 +704,9 @@ small {
     color: var(--muted);
 }
 
+
 /* Formulários */
+
 input,
 select,
 textarea {
@@ -842,7 +857,9 @@ input[type="radio"] {
     border-radius: var(--radius);
 }
 
+
 /* Tabelas */
+
 .table-wrap {
     overflow-x: auto;
     padding: 0;
@@ -940,7 +957,9 @@ td.empty {
     padding: 44px 20px !important;
 }
 
+
 /* dl / detalhes */
+
 dl {
     display: grid;
     gap: 14px 18px;
@@ -985,7 +1004,9 @@ dd {
     font-weight: 600;
 }
 
+
 /* Relatórios */
+
 .report-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -1029,7 +1050,9 @@ dd {
     background: var(--white);
 }
 
+
 /* Alertas */
+
 .alert {
     display: flex;
     align-items: flex-start;
@@ -1083,26 +1106,24 @@ dd {
         opacity: 0;
         transform: translateY(-8px);
     }
-
     to {
         opacity: 1;
         transform: none;
     }
 }
 
+
 /* ==========================================================
    AUTENTICAÇÃO
    ========================================================== */
+
 .auth-page {
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 40px 20px;
-    background:
-        radial-gradient(900px 500px at 12% -10%, rgba(201, 174, 134, .45), transparent 60%),
-        radial-gradient(800px 500px at 100% 110%, rgba(166, 124, 75, .28), transparent 60%),
-        var(--off-white);
+    background: radial-gradient(900px 500px at 12% -10%, rgba(201, 174, 134, .45), transparent 60%), radial-gradient(800px 500px at 100% 110%, rgba(166, 124, 75, .28), transparent 60%), var(--off-white);
 }
 
 .auth-card {
@@ -1121,7 +1142,6 @@ dd {
         opacity: 0;
         transform: translateY(14px);
     }
-
     to {
         opacity: 1;
         transform: none;
@@ -1274,9 +1294,11 @@ dd {
     background: var(--off-white);
 }
 
+
 /* ==========================================================
    RESPONSIVO
    ========================================================== */
+
 @media (max-width: 1100px) {
     .grid-two {
         grid-template-columns: 1fr;
@@ -1297,7 +1319,6 @@ dd {
         padding: 10px 16px;
         box-shadow: 0 4px 16px rgba(75, 54, 39, .18);
     }
-
     .mobile-bar img {
         height: 40px;
         width: auto;
@@ -1305,7 +1326,6 @@ dd {
         border-radius: 8px;
         padding: 3px 8px;
     }
-
     .nav-toggle {
         display: grid;
         place-items: center;
@@ -1317,22 +1337,18 @@ dd {
         color: #fff;
         cursor: pointer;
     }
-
     .nav-toggle:hover {
         background: rgba(255, 255, 255, .18);
     }
-
     .sidebar {
         transform: translateX(-100%);
         width: min(290px, 84vw);
         box-shadow: none;
     }
-
     body.nav-open .sidebar {
         transform: none;
         box-shadow: var(--shadow-lg);
     }
-
     .sidebar-backdrop {
         display: block;
         position: fixed;
@@ -1343,21 +1359,17 @@ dd {
         pointer-events: none;
         transition: opacity .3s;
     }
-
     body.nav-open .sidebar-backdrop {
         opacity: 1;
         pointer-events: auto;
     }
-
     body.nav-open {
         overflow: hidden;
     }
-
     .main {
         margin-left: 0;
         padding: 24px 18px 48px;
     }
-
     h1 {
         font-size: 26px;
     }
@@ -1367,50 +1379,40 @@ dd {
     .form-grid {
         grid-template-columns: 1fr;
     }
-
     .filters,
     .toolbar {
         flex-direction: column;
         align-items: stretch;
     }
-
     .toolbar .button,
     .filters .button {
         width: 100%;
     }
-
     .card {
         padding: 18px;
     }
-
     th,
     td {
         padding: 13px 14px;
     }
-
     dl {
         grid-template-columns: 1fr;
         gap: 2px;
     }
-
     dd {
         margin-bottom: 10px;
     }
-
     .form-actions {
         flex-direction: column-reverse;
         align-items: stretch;
         text-align: center;
     }
-
     .form-actions .button {
         width: 100%;
     }
-
     .main>header .button {
         width: 100%;
     }
-
     .profile-head {
         flex-direction: column;
         align-items: flex-start;
@@ -1421,23 +1423,19 @@ dd {
     .auth-page {
         padding: 20px 14px;
     }
-
     .auth-card {
         padding: 30px 22px;
         border-radius: 16px;
     }
-
     .auth-card h1 {
         font-size: 24px;
     }
-
     .login-brand img {
         width: 165px;
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
-
     *,
     *::before,
     *::after {
@@ -1448,7 +1446,6 @@ dd {
 }
 
 @media print {
-
     .sidebar,
     .mobile-bar,
     .button,
@@ -1456,14 +1453,65 @@ dd {
     .row-actions {
         display: none !important;
     }
-
     .main {
         margin: 0;
         padding: 0;
     }
-
     .card,
     .stat {
         box-shadow: none;
     }
+}
+
+
+/* ==========================================================
+   EXCLUSÃO (ações destrutivas)
+   ========================================================== */
+
+.button.danger {
+    background: var(--danger);
+    box-shadow: 0 4px 12px rgba(154, 74, 49, .25);
+}
+
+.button.danger:hover {
+    background: #7D3A25;
+    box-shadow: 0 8px 18px rgba(125, 58, 37, .28);
+}
+
+.button.danger-outline {
+    color: var(--danger);
+    border-color: var(--danger);
+}
+
+.button.danger-outline:hover {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border-color: var(--danger);
+}
+
+.row-actions a.danger {
+    color: var(--danger);
+}
+
+.row-actions a.danger:hover {
+    background: var(--danger-bg);
+    border-color: var(--danger);
+}
+
+.confirm-impact ul {
+    margin: 8px 0 0 18px;
+    padding: 0;
+}
+
+.confirm-check {
+    display: flex !important;
+    align-items: flex-start;
+    gap: 10px;
+    font-weight: 500 !important;
+}
+
+.confirm-check input {
+    width: auto;
+    margin-top: 3px;
+    accent-color: var(--danger);
 }

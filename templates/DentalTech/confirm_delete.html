@@ -1,0 +1,37 @@
+{% extends "DentalTech/base.html" %}
+
+{% block title %}{{ titulo }} | Harmoniê{% endblock %}
+
+{% block heading %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<form method="post" class="card form-card">
+    {% csrf_token %}
+
+    <h2>Excluir {{ objeto }}?</h2>
+    <p>{{ descricao }}</p>
+
+    {% if impactos %}
+        <div class="errors confirm-impact">
+            <strong>Isto também vai apagar:</strong>
+            <ul>
+                {% for item in impactos %}
+                    <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <label class="confirm-check">
+            <input type="checkbox" name="confirmar_historico" required>
+            Entendo que essa exclusão é definitiva e inclui o histórico acima.
+        </label>
+    {% else %}
+        <p class="muted">Esta ação não pode ser desfeita.</p>
+    {% endif %}
+
+    <div class="form-actions">
+        <a href="{% if cancel_pk %}{% url cancel_url cancel_pk %}{% else %}{% url cancel_url %}{% endif %}">Cancelar</a>
+        <button type="submit" class="button danger">Excluir definitivamente</button>
+    </div>
+</form>
+{% endblock %}
