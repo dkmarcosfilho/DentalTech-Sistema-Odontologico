@@ -236,6 +236,29 @@ class _DentePorNumeroMixin:
             return None
         return self.paciente.obter_dente(int(numero))
 
+# ==========================================================
+# Clínico: prontuário, odontograma, tratamentos, procedimentos
+# ==========================================================
+
+class ProntuarioForm(forms.ModelForm):
+    class Meta:
+        model = Prontuario
+        fields = [
+            "alergias",
+            "medicamentos",
+            "historico_medico",
+            "historico_odontologico",
+            "observacoes",
+        ]
+        widgets = {nome: forms.Textarea(attrs={"rows": 4}) for nome in fields}
+        labels = {
+            "alergias": "Alergias",
+            "medicamentos": "Medicamentos em uso",
+            "historico_medico": "Histórico médico",
+            "historico_odontologico": "Histórico odontológico",
+            "observacoes": "Observações",
+        }
+
 
 class TratamentoForm(_DentePorNumeroMixin, forms.ModelForm):
     class Meta:

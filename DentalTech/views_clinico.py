@@ -11,6 +11,7 @@ from .auditoria import registrar
 from .forms import (
     ProcedimentoForm,
     TratamentoForm,
+    ProntuarioForm,
 )
 from .models import (
     DENTES_DECIDUOS,
@@ -27,6 +28,49 @@ from .permissoes import admin_required, get_paciente_ou_404, usuario_tem_acesso_
 from .utils import paginar
 
 Acao = LogAuditoria.Acao
+
+
+# ==========================================================
+# Prontuário
+# ==========================================================
+
+@login_required
+def prontuario_detail(request, pk):
+    paciente = get_paciente_ou_404(request, pk)
+    prontuario = Prontuario.objects.filter(paciente=paciente).first()
+    registrar(request, Acao.VISUALIZOU, prontuario or paciente,
+              paciente=paciente, modelo="Prontuario")
+
+    return render(
+        request,
+        "DentalTech/pacientes/prontuario.html",
+        {"paciente": paciente, "prontuario": prontuario},
+    )
+
+
+@login_required
+def prontuario_update(request, pk):
+    paciente = get_paciente_ou_404(request, pk)
+    prontuario = Prontuario.objects.filter(paciente=paciente).first()
+    novo = prontuario is None
+    form = ProntuarioForm(
+        request.POST or None,
+        instance=prontuario or Prontuario(paciente=paciente),
+    )
+
+    if form.is_valid():
+        campos = list(form.changed_data)
+        prontuario = form.save()
+        registrar(request, Acao.CRIOU if novo else Acao.ALTEROU, prontuario,
+                  campos=None if novo else campos)
+        messages.success(request, "Prontuário salvo.")
+        return redirect("DentalTech:prontuario", pk=paciente.pk)
+
+    return render(
+        request,
+        "DentalTech/pacientes/prontuario_form.html",
+        {"form": form, "paciente": paciente},
+    )
 
 
 # ==========================================================

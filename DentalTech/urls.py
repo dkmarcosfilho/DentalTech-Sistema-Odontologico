@@ -90,6 +90,15 @@ urlpatterns = [
     path("pacientes/<int:pk>/tratamentos/<int:tratamento_id>/concluir/", views_clinico.tratamento_concluir, name="tratamento_concluir"),
     path("pacientes/<int:pk>/tratamentos/<int:tratamento_id>/excluir/", views_clinico.tratamento_delete, name="tratamento_delete"),
 
+    # Prontuário, odontograma, dentes e tratamentos
+    path("pacientes/<int:pk>/prontuario/", views_clinico.prontuario_detail, name="prontuario"),
+    path("pacientes/<int:pk>/prontuario/editar/", views_clinico.prontuario_update, name="prontuario_update"),
+    path("pacientes/<int:pk>/tratamentos/", views_clinico.tratamento_list, name="tratamentos"),
+    path("pacientes/<int:pk>/tratamentos/novo/", views_clinico.tratamento_create, name="tratamento_create"),
+    path("pacientes/<int:pk>/tratamentos/<int:tratamento_id>/editar/", views_clinico.tratamento_update, name="tratamento_update"),
+    path("pacientes/<int:pk>/tratamentos/<int:tratamento_id>/concluir/", views_clinico.tratamento_concluir, name="tratamento_concluir"),
+    path("pacientes/<int:pk>/tratamentos/<int:tratamento_id>/excluir/", views_clinico.tratamento_delete, name="tratamento_delete"),
+
 
        # Procedimentos (cadastro e preços)
     path("procedimentos/", views_clinico.procedimento_list, name="procedimentos"),

@@ -1,0 +1,47 @@
+{% extends "DentalTech/base.html" %}
+
+{% block title %}Prontuário de {{ paciente.nome }} | Harmoniê{% endblock %}
+{% block heading %}Prontuário{% endblock %}
+
+{% block header_action %}
+    <a class="button" href="{% url 'DentalTech:prontuario_update' paciente.pk %}">
+        {% if prontuario %}Editar prontuário{% else %}Preencher prontuário{% endif %}
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="context card">
+    <b>{{ paciente.nome }}</b>
+    <span>{{ paciente.idade }} anos</span>
+    <a class="link" href="{% url 'DentalTech:paciente_detail' paciente.pk %}">← Voltar à ficha</a>
+</div>
+
+{% if prontuario %}
+    {% if prontuario.alergias %}
+        <div class="callout warning-callout">
+            <strong>Alergias</strong>
+            <p>{{ prontuario.alergias|linebreaksbr }}</p>
+        </div>
+    {% endif %}
+
+    <div class="grid-two">
+        <div class="card">
+            <h2>Saúde geral</h2>
+            <h3>Medicamentos em uso</h3>
+            <p>{{ prontuario.medicamentos|linebreaksbr|default:"—" }}</p>
+            <h3>Histórico médico</h3>
+            <p>{{ prontuario.historico_medico|linebreaksbr|default:"—" }}</p>
+        </div>
+        <div class="card">
+            <h2>Saúde bucal</h2>
+            <h3>Histórico odontológico</h3>
+            <p>{{ prontuario.historico_odontologico|linebreaksbr|default:"—" }}</p>
+            <h3>Observações</h3>
+            <p>{{ prontuario.observacoes|linebreaksbr|default:"—" }}</p>
+        </div>
+    </div>
+    <p class="muted">Atualizado em {{ prontuario.atualizado_em|date:"d/m/Y H:i" }}</p>
+{% else %}
+    <div class="card"><p class="empty">O prontuário deste paciente ainda não foi preenchido.</p></div>
+{% endif %}
+{% endblock %}
