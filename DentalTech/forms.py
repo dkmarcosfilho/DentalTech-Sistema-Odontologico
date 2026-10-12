@@ -122,9 +122,21 @@ class PacienteForm(forms.ModelForm):
             raise forms.ValidationError("A data de nascimento não pode ser no futuro.")
         return data
 
-
+# ==========================================================
+# Dentistas e usuários
+# ==========================================================
 
 class ProfissionalForm(forms.ModelForm):
+    usuario = forms.ModelChoiceField(
+        queryset=User.objects.none(),
+        required=False,
+        label="Usuário de acesso",
+        help_text=(
+            "Vincule uma conta existente para que este dentista possa entrar "
+            "no sistema. Contas novas precisam ser aprovadas na tela Usuários."
+        ),
+    )
+
     class Meta:
         model = Profissional
         fields = [
@@ -133,6 +145,7 @@ class ProfissionalForm(forms.ModelForm):
             "especialidade",
             "telefone",
             "email",
+            "usuario",
         ]
         labels = {
             "nome": "Nome do dentista",
@@ -142,99 +155,14 @@ class ProfissionalForm(forms.ModelForm):
             "email": "E-mail",
         }
 
-
-class AgendamentoForm(forms.ModelForm):
-    class Meta:
-        model = Agendamento
-        fields = [
-            "paciente",
-            "profissional",
-            "data",
-            "horario",
-            "status",
-            "motivo",
-            "observacoes",
-        ]
-        widgets = {
-            "data": DateInput(),
-            "horario": TimeInput(),
-        }
-        labels = {
-            "paciente": "Paciente",
-            "profissional": "Dentista",
-            "data": "Data",
-            "horario": "Horário",
-            "status": "Status",
-            "motivo": "Motivo da consulta",
-            "observacoes": "Observações",
-        }
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self.fields["paciente"].queryset = Paciente.objects.order_by("nome")
-        self.fields["profissional"].queryset = Profissional.objects.order_by("nome")
-
-
-class AtendimentoForm(forms.ModelForm):
-    class Meta:
-        model = Atendimento
-        fields = [
-            "profissional",
-            "descricao",
-            "diagnostico",
-            "observacoes",
-            "status",
-        ]
-
-
-class AtendimentoProcedimentoForm(forms.ModelForm):
-    class Meta:
-        model = AtendimentoProcedimento
-        fields = [
-            "procedimento",
-            "dente",
-            "observacoes",
-        ]
-
-
-AtendimentoProcedimentoFormSet = inlineformset_factory(
-    Atendimento,
-    AtendimentoProcedimento,
-    form=AtendimentoProcedimentoForm,
-    extra=1,
-    can_delete=True,
-)
-
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
-
-
-class CadastroForm(UserCreationForm):
-    email = forms.EmailField(required=True, label="E-mail")
-
-    class Meta:
-        model = User
-        fields = ("username", "email", "password1", "password2")
-
-
-class _DentePorNumeroMixin:
-    """Escolhe o dente pelo número (FDI); o registro é criado sob demanda."""
-
-    def _configurar_dente(self, paciente):
-        self.paciente = paciente
-        self.fields["dente_numero"] = forms.ChoiceField(
-            choices=CHOICES_DENTES, required=False, label="Dente",
-        )
-        dente = getattr(self.instance, "dente", None) if self.instance.pk else None
-        if dente:
-            self.initial["dente_numero"] = str(dente.numero)
-
-    def _dente(self):
-        numero = self.cleaned_data.get("dente_numero")
-        if not numero:
-            return None
-        return self.paciente.obter_dente(int(numero))
+        livres = Q(profissional__isnull=True)
+        if self.instance.pk:
+            livres |= Q(profissional=self.instance)
+        campo = self.fields["usuario"]
+        campo.queryset = User.objects.filter(is_active=True).filter(livres).order_by("username")
+        campo.label_from_instance = _usuario_label
 
 
 # ==========================================================

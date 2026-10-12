@@ -618,173 +618,7 @@ def agendamento_delete(request, pk):
     messages.success(request, "Agendamento excluído.")
     return redirect(_destino(request))
 
-
-#DENTISTA
-
-@login_required
-def dentistas(request):
-    profissionais = Profissional.objects.select_related(
-        "usuario"
-    ).all()
-
-    return render(
-        request,
-        "DentalTech/dentistas/list.html",
-        {
-            "profissionais": profissionais,
-            "acesso_geral": usuario_tem_acesso_geral(request),
-        },
-    )
-
-
-@login_required
-def dentista_create(request):
-    if not usuario_tem_acesso_geral(request):
-        raise PermissionDenied(
-            "Somente administradores podem cadastrar dentistas."
-        )
-
-    form = ProfissionalForm(
-        request.POST or None
-    )
-
-    if form.is_valid():
-        form.save()
-
-        messages.success(
-            request,
-            "Dentista cadastrado com sucesso.",
-        )
-
-        return redirect(
-            "DentalTech:dentistas"
-        )
-
-    return render(
-        request,
-        "DentalTech/dentistas/form.html",
-        {
-            "form": form,
-            "titulo": "Novo dentista",
-        },
-    )
-
-
-@login_required
-def dentista_update(request, pk):
-    if not usuario_tem_acesso_geral(request):
-        raise PermissionDenied(
-            "Somente administradores podem editar dentistas."
-        )
-
-    profissional = get_object_or_404(
-        Profissional,
-        pk=pk,
-    )
-
-    form = ProfissionalForm(
-        request.POST or None,
-        instance=profissional,
-    )
-
-    if form.is_valid():
-        form.save()
-
-        messages.success(
-            request,
-            "Dentista atualizado com sucesso.",
-        )
-
-        return redirect(
-            "DentalTech:dentistas"
-        )
-
-    return render(
-        request,
-        "DentalTech/dentistas/form.html",
-        {
-            "form": form,
-            "titulo": "Editar dentista",
-        },
-    )
-
-
-@login_required
-def dentista_delete(request, pk):
-    if not usuario_tem_acesso_geral(request):
-        raise PermissionDenied(
-            "Somente administradores podem excluir dentistas."
-        )
-
-    profissional = get_object_or_404(
-        Profissional.objects.select_related("usuario"),
-        pk=pk,
-    )
-
-    agendamentos = profissional.agendamentos.all()
-    atendimentos = Atendimento.objects.filter(
-        Q(profissional=profissional)
-        | Q(agendamento__profissional=profissional)
-    )
-    usuario = profissional.usuario
-    remove_usuario = bool(
-        usuario and not (usuario.is_staff or usuario.is_superuser)
-    )
-
-    total_agendamentos = agendamentos.count()
-    total_atendimentos = atendimentos.count()
-    impactos = []
-
-    if total_agendamentos:
-        impactos.append(f"{total_agendamentos} agendamento(s)")
-    if total_atendimentos:
-        impactos.append(f"{total_atendimentos} atendimento(s) registrado(s)")
-
-    if request.method == "POST":
-        if impactos and not request.POST.get("confirmar_historico"):
-            messages.error(
-                request,
-                "Marque a confirmação para excluir o dentista "
-                "junto com o histórico.",
-            )
-        else:
-            nome = profissional.nome
-            with transaction.atomic():
-                atendimentos.delete()
-                agendamentos.delete()
-                profissional.delete()
-
-                if remove_usuario:
-                    try:
-                        usuario.delete()
-                    except ProtectedError:
-                        # Usuário tem relatórios gerados: não apaga,
-                        # só impede o acesso.
-                        usuario.is_active = False
-                        usuario.save(update_fields=["is_active"])
-
-            messages.success(request, f"Dentista {nome} excluído.")
-            return redirect("DentalTech:dentistas")
-
-    descricao = "O cadastro do dentista será removido."
-    if remove_usuario:
-        descricao += (
-            f" O login \"{usuario.get_username()}\" vinculado a ele "
-            "também será removido."
-        )
-
-    return render(
-        request,
-        "DentalTech/confirm_delete.html",
-        {
-            "titulo": "Excluir dentista",
-            "objeto": profissional.nome,
-            "descricao": descricao,
-            "impactos": impactos,
-            "cancel_url": "DentalTech:dentistas",
-        },
-    )
-
+# RELATORIOS
 
 @login_required
 def relatorios(request):
@@ -860,6 +694,132 @@ def configuracoes(request):
         {
             "usuario": request.user,
             "dentistas": Profissional.objects.count(),
+        },
+    )
+
+
+# ==========================================================
+# Dentistas
+# ==========================================================
+
+@login_required
+def dentistas(request):
+    profissionais = Profissional.objects.select_related("usuario")
+    pagina, querystring = paginar(request, profissionais)
+
+    return render(
+        request,
+        "DentalTech/dentistas/list.html",
+        {
+            "pagina": pagina,
+            "querystring": querystring,
+            "acesso_geral": usuario_tem_acesso_geral(request),
+        },
+    )
+
+
+@admin_required
+def dentista_create(request):
+    form = ProfissionalForm(request.POST or None)
+
+    if form.is_valid():
+        profissional = form.save()
+        registrar(request, Acao.CRIOU, profissional, modelo="Dentista")
+        messages.success(request, "Dentista cadastrado com sucesso.")
+        return redirect("DentalTech:dentistas")
+
+    return render(
+        request,
+        "DentalTech/dentistas/form.html",
+        {"form": form, "titulo": "Novo dentista"},
+    )
+
+
+@admin_required
+def dentista_update(request, pk):
+    profissional = get_object_or_404(Profissional, pk=pk)
+    form = ProfissionalForm(request.POST or None, instance=profissional)
+
+    if form.is_valid():
+        campos = list(form.changed_data)
+        form.save()
+        registrar(request, Acao.ALTEROU, profissional, campos=campos, modelo="Dentista")
+        messages.success(request, "Dentista atualizado com sucesso.")
+        return redirect("DentalTech:dentistas")
+
+    return render(
+        request,
+        "DentalTech/dentistas/form.html",
+        {"form": form, "titulo": "Editar dentista"},
+    )
+
+
+@admin_required
+def dentista_delete(request, pk):
+    profissional = get_object_or_404(
+        Profissional.objects.select_related("usuario"), pk=pk
+    )
+
+    agendamentos = profissional.agendamentos.all()
+    atendimentos = Atendimento.objects.filter(
+        Q(profissional=profissional) | Q(agendamento__profissional=profissional)
+    )
+    usuario = profissional.usuario
+    remove_usuario = bool(
+        usuario and not (usuario.is_staff or usuario.is_superuser)
+    )
+
+    impactos = []
+    if agendamentos.count():
+        impactos.append(f"{agendamentos.count()} agendamento(s)")
+    if atendimentos.count():
+        impactos.append(f"{atendimentos.count()} atendimento(s) registrado(s)")
+
+    if request.method == "POST":
+        if impactos and not request.POST.get("confirmar_historico"):
+            messages.error(
+                request,
+                "Marque a confirmação para excluir o dentista junto com o histórico.",
+            )
+        else:
+            nome = profissional.nome
+            registrar(
+                request, Acao.EXCLUIU, profissional, modelo="Dentista",
+                detalhes="Exclusão com histórico: " + (", ".join(impactos) or "sem histórico"),
+            )
+            with transaction.atomic():
+                atendimentos.delete()
+                agendamentos.delete()
+                profissional.delete()
+
+                if remove_usuario:
+                    try:
+                        usuario.delete()
+                    except ProtectedError:
+                        # Usuário tem relatórios gerados: não apaga,
+                        # só impede o acesso.
+                        usuario.is_active = False
+                        usuario.save(update_fields=["is_active"])
+
+            messages.success(request, f"Dentista {nome} excluído.")
+            return redirect("DentalTech:dentistas")
+
+    descricao = "O cadastro do dentista será removido."
+    if remove_usuario:
+        descricao += (
+            f" O login \"{usuario.get_username()}\" vinculado a ele "
+            "também será removido."
+        )
+
+    return render(
+        request,
+        "DentalTech/confirm_delete.html",
+        {
+            "titulo": "Excluir dentista",
+            "objeto": profissional.nome,
+            "descricao": descricao,
+            "impactos": impactos,
+            "cancel_url": "DentalTech:dentistas",
         },
     )
 

@@ -34,21 +34,9 @@ urlpatterns = [
 
     # Dentistas
     path("dentistas/", views.dentistas, name="dentistas"),
-    path(
-        "dentistas/novo/",
-        views.dentista_create,
-        name="dentista_create",
-    ),
-    path(
-        "dentistas/<int:pk>/editar/",
-        views.dentista_update,
-        name="dentista_update",
-    ),
-    path(
-        "dentistas/<int:pk>/excluir/",
-        views.dentista_delete,
-        name="dentista_delete",
-    ),
+    path("dentistas/novo/", views.dentista_create, name="dentista_create"),
+    path("dentistas/<int:pk>/editar/", views.dentista_update, name="dentista_update"),
+    path("dentistas/<int:pk>/excluir/", views.dentista_delete, name="dentista_delete"),
 
     # Relatórios e configurações
     path(
