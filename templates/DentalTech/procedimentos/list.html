@@ -1,0 +1,52 @@
+{% extends "DentalTech/base.html" %}
+{% load dentaltech_extras %}
+
+{% block title %}Procedimentos | Harmoniê{% endblock %}
+{% block heading %}Procedimentos{% endblock %}
+
+{% block header_action %}
+    {% if acesso_geral %}
+        <a class="button" href="{% url 'DentalTech:procedimento_create' %}">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            Novo procedimento
+        </a>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<form class="card filters" method="get">
+    <label>Buscar <input type="search" name="q" value="{{ termo }}" placeholder="Nome ou descrição"></label>
+    <label>
+        Situação
+        <select name="situacao">
+            <option value="">Todos</option>
+            <option value="ativos" {% if situacao == "ativos" %}selected{% endif %}>Ativos</option>
+            <option value="inativos" {% if situacao == "inativos" %}selected{% endif %}>Inativos</option>
+        </select>
+    </label>
+    <button type="submit" class="button secondary">Filtrar</button>
+</form>
+
+<div class="card table-wrap">
+    <table>
+        <thead><tr><th>Procedimento</th><th>Valor</th><th>Situação</th><th class="actions"></th></tr></thead>
+        <tbody>
+            {% for p in pagina %}
+                <tr>
+                    <td><b>{{ p.nome }}</b>{% if p.descricao %}<small>{{ p.descricao|truncatechars:80 }}</small>{% endif %}</td>
+                    <td>{{ p.valor|moeda }}</td>
+                    <td>{% if p.ativo %}<span class="badge confirmada">Ativo</span>{% else %}<span class="badge cancelada">Inativo</span>{% endif %}</td>
+                    <td class="actions">
+                        <div class="row-actions">
+                            {% if acesso_geral %}<a href="{% url 'DentalTech:procedimento_update' p.pk %}">Editar</a>{% endif %}
+                        </div>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="4" class="empty">Nenhum procedimento encontrado.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include "DentalTech/_paginacao.html" %}
+{% endblock %}

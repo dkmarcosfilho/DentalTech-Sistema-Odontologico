@@ -1,21 +1,54 @@
+from datetime import datetime
+
 from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 from django.forms import inlineformset_factory
+from django.db.models import Q
+from django.utils import timezone
 
 from .models import (
+    DENTES_DECIDUOS,
+    DENTES_PERMANENTES,
     Agendamento,
     Atendimento,
     AtendimentoProcedimento,
+    Odontograma,
     Paciente,
+    Procedimento,
     Profissional,
+    Prontuario,
+    Tratamento,
+    Dente,
 )
+from .utils import formatar_cpf, formatar_moeda, so_digitos
 
 
 class DateInput(forms.DateInput):
     input_type = "date"
 
+    def __init__(self, **kwargs):
+        kwargs.setdefault("format", "%Y-%m-%d")
+        super().__init__(**kwargs)
+
 
 class TimeInput(forms.TimeInput):
     input_type = "time"
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault("format", "%H:%M")
+        super().__init__(**kwargs)
+
+
+def _usuario_label(usuario):
+    nome = usuario.get_full_name() or usuario.username
+    return f"{nome} ({usuario.username})"
+
+
+CHOICES_DENTES = [("", "— nenhum —")] + [
+    ("Permanentes", [(str(n), f"Dente {n}") for n in DENTES_PERMANENTES]),
+    ("Decíduos", [(str(n), f"Dente {n}") for n in DENTES_DECIDUOS]),
+]
 
 
 class PacienteForm(forms.ModelForm):
@@ -127,3 +160,29 @@ class CadastroForm(UserCreationForm):
     class Meta:
         model = User
         fields = ("username", "email", "password1", "password2")
+
+
+class ProcedimentoForm(forms.ModelForm):
+    class Meta:
+        model = Procedimento
+        fields = ["nome", "descricao", "valor", "ativo"]
+        labels = {"valor": "Valor (R$)", "ativo": "Ativo (disponível para novos atendimentos)"}
+        widgets = {
+            "descricao": forms.Textarea(attrs={"rows": 3}),
+            "valor": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
+        }
+
+    def clean_valor(self):
+        valor = self.cleaned_data["valor"]
+        if valor < 0:
+            raise forms.ValidationError("O valor não pode ser negativo.")
+        return valor
+
+    def clean_nome(self):
+        nome = self.cleaned_data["nome"].strip()
+        duplicado = Procedimento.objects.filter(nome__iexact=nome)
+        if self.instance.pk:
+            duplicado = duplicado.exclude(pk=self.instance.pk)
+        if duplicado.exists():
+            raise forms.ValidationError("Já existe um procedimento com este nome.")
+        return nome
