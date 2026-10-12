@@ -1,4 +1,5 @@
 {% extends "DentalTech/base.html" %}
+{% load dentaltech_extras %}
 
 {% block title %}
     Atendimento | Harmoniê
@@ -31,7 +32,7 @@
 
                 <dt>Status</dt>
                 <dd>
-                    <span class="badge concluido">
+                    <span class="badge {{ atendimento.status|lower }}">
                         {{ atendimento.get_status_display }}
                     </span>
                 </dd>
@@ -54,29 +55,26 @@
         <div class="card">
             <h2>Procedimentos</h2>
 
-            {% for item in atendimento.procedimentos.all %}
+            {% for item in procedimentos %}
                 <div class="list-row">
                     <div>
                         <b>{{ item.procedimento.nome }}</b>
-
                         <small>
-                            {% if item.dente %}
-                                Dente {{ item.dente.numero }} ·
-                            {% endif %}
-
+                            {% if item.dente %}Dente {{ item.dente.numero }} · {% endif %}
                             {{ item.observacoes|default:"Sem observações" }}
                         </small>
                     </div>
-
-                    <strong>
-                        R$ {{ item.procedimento.valor|floatformat:2 }}
-                    </strong>
+                    <strong>{{ item.valor|moeda }}</strong>
                 </div>
             {% empty %}
-                <p class="empty">
-                    Nenhum procedimento vinculado.
-                </p>
+                <p class="empty">Nenhum procedimento vinculado.</p>
             {% endfor %}
+            {% if procedimentos %}
+                <div class="list-row total-row">
+                    <div><b>Total</b></div>
+                    <strong>{{ total|moeda }}</strong>
+                </div>
+            {% endif %}
         </div>
     </div>
 {% endblock %}

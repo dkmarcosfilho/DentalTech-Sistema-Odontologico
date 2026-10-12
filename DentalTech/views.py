@@ -864,74 +864,62 @@ def configuracoes(request):
     )
 
 
+# ==========================================================
+# Atendimentos
+# ==========================================================
+
+def _atendimentos_visiveis(request):
+    profissional = get_profissional_logado(request)
+    atendimentos = Atendimento.objects.select_related(
+        "agendamento__paciente",
+        "agendamento__profissional",
+        "profissional",
+    )
+    if profissional:
+        atendimentos = atendimentos.filter(profissional=profissional)
+    return atendimentos
+
+
 @login_required
 def atendimento_create(request, agendamento_id):
-    profissional_logado = get_profissional_logado(
-        request
+    agendamento = get_object_or_404(
+        agendamentos_visiveis(request), pk=agendamento_id
     )
 
-    if profissional_logado:
-        agendamento = get_object_or_404(
-            Agendamento.objects.select_related(
-                "paciente",
-                "profissional",
-            ),
-            pk=agendamento_id,
-            profissional=profissional_logado,
-        )
+    existente = Atendimento.objects.filter(agendamento=agendamento).first()
+    if existente:
+        return redirect("DentalTech:atendimento_detail", pk=existente.pk)
 
-    else:
-        agendamento = get_object_or_404(
-            Agendamento.objects.select_related(
-                "paciente",
-                "profissional",
-            ),
-            pk=agendamento_id,
-        )
+    if agendamento.status == Agendamento.Status.CANCELADA:
+        messages.error(request, "Não é possível registrar atendimento de um agendamento cancelado.")
+        return redirect("DentalTech:agenda")
 
-    atendimento = getattr(
-        agendamento,
-        "atendimento",
-        None,
+    atendimento = Atendimento(
+        agendamento=agendamento,
+        profissional=agendamento.profissional,
+    )
+    form = AtendimentoForm(request.POST or None, instance=atendimento)
+    formset = AtendimentoProcedimentoFormSet(
+        request.POST or None,
+        instance=atendimento,
+        form_kwargs={"paciente": agendamento.paciente},
     )
 
-    if atendimento:
-        return redirect(
-            "DentalTech:atendimento_detail",
-            pk=atendimento.pk,
-        )
+    if form.is_valid() and formset.is_valid():
+        with transaction.atomic():
+            atendimento.save()  # também marca o agendamento como "Realizada"
+            formset.save()
 
-    form = AtendimentoForm(
-        request.POST or None
-    )
-
-    if form.is_valid():
-        atendimento = form.save(
-            commit=False
-        )
-
-        atendimento.agendamento = agendamento
-        atendimento.profissional = (
-            agendamento.profissional
-        )
-
-        atendimento.save()
-
-        messages.success(
-            request,
-            "Atendimento registrado.",
-        )
-
-        return redirect(
-            "DentalTech:atendimento_detail",
-            pk=atendimento.pk,
-        )
+        registrar(request, Acao.CRIOU, atendimento)
+        messages.success(request, "Atendimento registrado e agendamento marcado como realizado.")
+        return redirect("DentalTech:atendimento_detail", pk=atendimento.pk)
 
     return render(
         request,
         "DentalTech/atendimentos/form.html",
         {
             "form": form,
+            "formset": formset,
             "agendamento": agendamento,
             "titulo": "Registrar atendimento",
         },
@@ -940,93 +928,51 @@ def atendimento_create(request, agendamento_id):
 
 @login_required
 def atendimento_detail(request, pk):
-    profissional_logado = get_profissional_logado(
-        request
+    atendimento = get_object_or_404(
+        _atendimentos_visiveis(request).prefetch_related(
+            "procedimentos__procedimento", "procedimentos__dente"
+        ),
+        pk=pk,
     )
+    registrar(request, Acao.VISUALIZOU, atendimento)
 
-    queryset = Atendimento.objects.select_related(
-        "agendamento__paciente",
-        "agendamento__profissional",
-        "profissional",
-    ).prefetch_related(
-        "procedimentos__procedimento",
-        "procedimentos__dente",
-    )
-
-    if profissional_logado:
-        atendimento = get_object_or_404(
-            queryset,
-            pk=pk,
-            profissional=profissional_logado,
-        )
-
-    else:
-        atendimento = get_object_or_404(
-            queryset,
-            pk=pk,
-        )
+    procedimentos = list(atendimento.procedimentos.all())
+    total = sum((p.valor for p in procedimentos), 0)
 
     return render(
         request,
         "DentalTech/atendimentos/detail.html",
         {
             "atendimento": atendimento,
+            "procedimentos": procedimentos,
+            "total": total,
         },
     )
 
 
 @login_required
 def atendimento_update(request, pk):
-    profissional_logado = get_profissional_logado(
-        request
-    )
+    atendimento = get_object_or_404(_atendimentos_visiveis(request), pk=pk)
 
-    if profissional_logado:
-        atendimento = get_object_or_404(
-            Atendimento,
-            pk=pk,
-            profissional=profissional_logado,
-        )
-
-    else:
-        atendimento = get_object_or_404(
-            Atendimento,
-            pk=pk,
-        )
-
-    form = AtendimentoForm(
-        request.POST or None,
-        instance=atendimento,
-    )
-
+    form = AtendimentoForm(request.POST or None, instance=atendimento)
     formset = AtendimentoProcedimentoFormSet(
         request.POST or None,
         instance=atendimento,
+        form_kwargs={"paciente": atendimento.agendamento.paciente},
     )
 
     if form.is_valid() and formset.is_valid():
-        atendimento_atualizado = form.save(
-            commit=False
-        )
+        campos = list(form.changed_data)
+        if formset.has_changed():
+            campos.append("procedimentos")
 
-        atendimento_atualizado.profissional = (
-            atendimento.agendamento.profissional
-        )
+        with transaction.atomic():
+            atendimento.save()
+            formset.save()
 
-        atendimento_atualizado.save()
-
-        formset.instance = atendimento_atualizado
-        formset.save()
-
-        messages.success(
-            request,
-            "Atendimento atualizado.",
-        )
-
-        return redirect(
-            "DentalTech:atendimento_detail",
-            pk=pk,
-        )
+        registrar(request, Acao.ALTEROU, atendimento, campos=campos)
+        messages.success(request, "Atendimento atualizado.")
+        return redirect("DentalTech:atendimento_detail", pk=pk)
 
     return render(
         request,

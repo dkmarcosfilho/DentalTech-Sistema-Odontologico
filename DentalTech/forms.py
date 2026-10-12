@@ -367,6 +367,73 @@ class _DentePorNumeroMixin:
         return self.paciente.obter_dente(int(numero))
 
 
+# ==========================================================
+# Atendimentos
+# ==========================================================
+
+class AtendimentoForm(forms.ModelForm):
+    class Meta:
+        model = Atendimento
+        fields = ["descricao", "diagnostico", "observacoes", "status"]
+        widgets = {
+            "descricao": forms.Textarea(attrs={"rows": 4}),
+            "diagnostico": forms.Textarea(attrs={"rows": 3}),
+            "observacoes": forms.Textarea(attrs={"rows": 3}),
+        }
+
+
+class _DentePorNumeroMixin:
+    """Escolhe o dente pelo número (FDI); o registro é criado sob demanda."""
+
+    def _configurar_dente(self, paciente):
+        self.paciente = paciente
+        self.fields["dente_numero"] = forms.ChoiceField(
+            choices=CHOICES_DENTES, required=False, label="Dente",
+        )
+        dente = getattr(self.instance, "dente", None) if self.instance.pk else None
+        if dente:
+            self.initial["dente_numero"] = str(dente.numero)
+
+    def _dente(self):
+        numero = self.cleaned_data.get("dente_numero")
+        if not numero:
+            return None
+        return self.paciente.obter_dente(int(numero))
+
+
+class AtendimentoProcedimentoForm(_DentePorNumeroMixin, forms.ModelForm):
+    class Meta:
+        model = AtendimentoProcedimento
+        fields = ["procedimento", "observacoes"]
+        widgets = {"observacoes": forms.TextInput()}
+
+    def __init__(self, *args, paciente=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._configurar_dente(paciente)
+        filtro = Q(ativo=True)
+        if self.instance.pk:
+            filtro |= Q(pk=self.instance.procedimento_id)
+        campo = self.fields["procedimento"]
+        campo.queryset = Procedimento.objects.filter(filtro)
+        campo.label_from_instance = lambda p: f"{p.nome} — {formatar_moeda(p.valor)}"
+        self.order_fields(["procedimento", "dente_numero", "observacoes"])
+
+    def save(self, commit=True):
+        objeto = super().save(commit=False)
+        objeto.dente = self._dente()
+        if commit:
+            objeto.save()
+        return objeto
+
+
+AtendimentoProcedimentoFormSet = inlineformset_factory(
+    Atendimento,
+    AtendimentoProcedimento,
+    form=AtendimentoProcedimentoForm,
+    extra=1,
+    can_delete=True,
+)
+
 
 # ==========================================================
 # Clínico: prontuário, odontograma, tratamentos, procedimentos
