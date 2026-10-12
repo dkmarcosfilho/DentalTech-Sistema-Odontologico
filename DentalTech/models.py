@@ -1,15 +1,67 @@
-from django.db import models
+from datetime import date, datetime
+
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.db import models, transaction
+from django.db.models import Q
+from django.utils import timezone
+
+from .utils import cpf_valido, formatar_cpf, so_digitos
+
+
+# ==========================================================
+# Numeração dos dentes (notação FDI / ISO 3950)
+# ==========================================================
+
+DENTES_PERMANENTES = (
+    list(range(11, 19)) + list(range(21, 29))
+    + list(range(31, 39)) + list(range(41, 49))
+)
+
+DENTES_DECIDUOS = (
+    list(range(51, 56)) + list(range(61, 66))
+    + list(range(71, 76)) + list(range(81, 86))
+)
+
+TODOS_OS_DENTES = DENTES_PERMANENTES + DENTES_DECIDUOS
+
+
+def validar_cpf(valor):
+    if not cpf_valido(valor):
+        raise ValidationError("Informe um CPF válido.")
+
+
+def validar_numero_dente(valor):
+    if valor not in TODOS_OS_DENTES:
+        raise ValidationError(
+            "Número de dente inválido (use a notação FDI, ex.: 18, 21, 46, 55)."
+        )
+
 
 class Paciente(models.Model):
     nome = models.CharField(max_length=150)
-    cpf = models.CharField(max_length=14, unique=True)
+    # Guardado somente com dígitos (11 caracteres). A máscara é só visual.
+    cpf = models.CharField(
+        max_length=14,
+        unique=True,
+        validators=[validar_cpf],
+        verbose_name="CPF",
+    )
     data_nascimento = models.DateField()
     telefone = models.CharField(max_length=20)
     email = models.EmailField(blank=True, null=True)
     endereco = models.CharField(max_length=255, blank=True, null=True)
     observacoes = models.TextField(blank=True, null=True)
     data_cadastro = models.DateTimeField(auto_now_add=True)
+
+    # Vínculo EXPLÍCITO entre dentistas e pacientes: define quem pode
+    # acessar a ficha. Não depende mais de existir um agendamento.
+    profissionais = models.ManyToManyField(
+        "Profissional",
+        related_name="pacientes",
+        blank=True,
+        verbose_name="Dentistas responsáveis",
+    )
 
     class Meta:
         verbose_name = "Paciente"
@@ -18,6 +70,33 @@ class Paciente(models.Model):
 
     def __str__(self):
         return self.nome
+
+    def save(self, *args, **kwargs):
+        # "111.111.111-11" e "11111111111" são o mesmo CPF.
+        self.cpf = so_digitos(self.cpf)
+        super().save(*args, **kwargs)
+
+    @property
+    def cpf_formatado(self):
+        return formatar_cpf(self.cpf)
+
+    @property
+    def idade(self):
+        hoje = timezone.localdate()
+        nasc = self.data_nascimento
+        return hoje.year - nasc.year - (
+            (hoje.month, hoje.day) < (nasc.month, nasc.day)
+        )
+
+    def obter_dente(self, numero):
+        """Devolve (criando se preciso) o dente do odontograma do paciente."""
+        with transaction.atomic():
+            odontograma, _ = Odontograma.objects.get_or_create(paciente=self)
+            dente, _ = Dente.objects.get_or_create(
+                odontograma=odontograma,
+                numero=numero,
+            )
+        return dente
 
 
 class Profissional(models.Model):
@@ -56,6 +135,11 @@ class Agendamento(models.Model):
         CANCELADA = "CANCELADA", "Cancelada"
         REMARCADA = "REMARCADA", "Remarcada"
 
+    # Estados em que a consulta ainda vai acontecer.
+    STATUS_PENDENTES = ("AGENDADA", "CONFIRMADA")
+    # Estados que liberam o horário para outro paciente.
+    STATUS_LIBERAM_HORARIO = ("CANCELADA", "REMARCADA")
+
     paciente = models.ForeignKey(
         Paciente,
         on_delete=models.CASCADE,
@@ -82,12 +166,38 @@ class Agendamento(models.Model):
         verbose_name = "Agendamento"
         verbose_name_plural = "Agendamentos"
         ordering = ["data", "horario"]
+        indexes = [
+            models.Index(fields=["data", "horario"], name="agend_data_horario_idx"),
+            models.Index(fields=["profissional", "data"], name="agend_prof_data_idx"),
+        ]
+        constraints = [
+            # Garantia no banco (vale até para requisições simultâneas):
+            # um dentista não pode ter dois agendamentos ativos no mesmo
+            # horário. Cancelados/remarcados liberam o horário.
+            models.UniqueConstraint(
+                fields=["profissional", "data", "horario"],
+                condition=~Q(status__in=["CANCELADA", "REMARCADA"]),
+                name="agendamento_horario_unico_por_profissional",
+                violation_error_message=(
+                    "Este dentista já tem um agendamento neste horário."
+                ),
+            ),
+        ]
 
     def __str__(self):
         return (
             f"{self.paciente.nome} - "
             f"{self.data} às {self.horario}"
         )
+
+    @property
+    def inicio(self):
+        """Data e hora do agendamento, no fuso da clínica."""
+        return timezone.make_aware(datetime.combine(self.data, self.horario))
+
+    @property
+    def atendimento_registrado(self):
+        return Atendimento.objects.filter(agendamento=self).first()
 
 
 class Prontuario(models.Model):
@@ -145,7 +255,9 @@ class Dente(models.Model):
         on_delete=models.CASCADE,
         related_name="dentes"
     )
-    numero = models.PositiveSmallIntegerField()
+    numero = models.PositiveSmallIntegerField(
+        validators=[validar_numero_dente],
+    )
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
@@ -165,7 +277,7 @@ class Dente(models.Model):
         ordering = ["numero"]
 
     def __str__(self):
-        return f"Dente {self.numero} - {self.status}"
+        return f"Dente {self.numero} - {self.get_status_display()}"
 
 
 class Tratamento(models.Model):
@@ -191,6 +303,7 @@ class Tratamento(models.Model):
     class Meta:
         verbose_name = "Tratamento"
         verbose_name_plural = "Tratamentos"
+        ordering = ["concluido", "-data_inicio", "-id"]
 
     def __str__(self):
         return self.nome
@@ -234,6 +347,26 @@ class Atendimento(models.Model):
             f"{self.agendamento.paciente.nome}"
         )
 
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+            self.sincronizar_agendamento()
+
+    def sincronizar_agendamento(self):
+        """
+        Registrar um atendimento muda o status do agendamento sozinho:
+        vira "Realizada" (ou "Cancelada", se o atendimento foi cancelado).
+        """
+        if self.status == self.Status.CANCELADO:
+            novo_status = Agendamento.Status.CANCELADA
+        else:
+            novo_status = Agendamento.Status.REALIZADA
+
+        agendamento = self.agendamento
+        if agendamento.status != novo_status:
+            agendamento.status = novo_status
+            agendamento.save(update_fields=["status", "atualizado_em"])
+
 
 class Procedimento(models.Model):
     nome = models.CharField(max_length=150)
@@ -272,6 +405,14 @@ class AtendimentoProcedimento(models.Model):
         blank=True,
         related_name="procedimentos_realizados"
     )
+    # Preço cobrado no momento do atendimento. Sem isso, reajustar o preço
+    # do procedimento alteraria retroativamente o histórico financeiro.
+    valor = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        editable=False,
+    )
     observacoes = models.TextField(blank=True)
 
     class Meta:
@@ -283,6 +424,22 @@ class AtendimentoProcedimento(models.Model):
             f"{self.procedimento.nome} - "
             f"{self.atendimento}"
         )
+
+    def save(self, *args, **kwargs):
+        # Congela o preço da tabela na hora do registro (ou se o
+        # procedimento for trocado). Reajustes futuros não mudam o histórico.
+        if self._state.adding:
+            self.valor = self.procedimento.valor
+        else:
+            anterior = (
+                type(self).objects
+                .filter(pk=self.pk)
+                .values_list("procedimento_id", flat=True)
+                .first()
+            )
+            if anterior != self.procedimento_id:
+                self.valor = self.procedimento.valor
+        super().save(*args, **kwargs)
 
 
 class Relatorio(models.Model):
@@ -311,3 +468,62 @@ class Relatorio(models.Model):
 
     def __str__(self):
         return self.titulo
+
+
+class LogAuditoria(models.Model):
+    """
+    Trilha de auditoria (LGPD): quem viu, criou, alterou ou excluiu
+    dados de pacientes, e quando.
+
+    Guarda só os NOMES dos campos alterados, nunca os valores, para o
+    log não virar uma segunda cópia de dados de saúde.
+    """
+
+    class Acao(models.TextChoices):
+        VISUALIZOU = "VISUALIZOU", "Visualizou"
+        CRIOU = "CRIOU", "Criou"
+        ALTEROU = "ALTEROU", "Alterou"
+        EXCLUIU = "EXCLUIU", "Excluiu"
+        EXPORTOU = "EXPORTOU", "Exportou"
+        LOGIN = "LOGIN", "Entrou no sistema"
+        LOGOUT = "LOGOUT", "Saiu do sistema"
+        LOGIN_FALHOU = "LOGIN_FALHOU", "Tentativa de login falhou"
+
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    # Cópia do nome: o registro continua legível se o usuário for apagado.
+    usuario_nome = models.CharField(max_length=150, blank=True)
+    acao = models.CharField(max_length=20, choices=Acao.choices)
+    modelo = models.CharField(max_length=60, blank=True)
+    objeto_id = models.CharField(max_length=40, blank=True)
+    objeto_repr = models.CharField(max_length=255, blank=True)
+    paciente = models.ForeignKey(
+        Paciente,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    detalhes = models.TextField(blank=True)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = "Log de auditoria"
+        verbose_name_plural = "Logs de auditoria"
+        ordering = ["-criado_em", "-id"]
+        indexes = [
+            models.Index(fields=["paciente", "-criado_em"], name="log_paciente_idx"),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.criado_em:%d/%m/%Y %H:%M} · "
+            f"{self.usuario_nome or 'anônimo'} · "
+            f"{self.get_acao_display()} {self.modelo}"
+        )
