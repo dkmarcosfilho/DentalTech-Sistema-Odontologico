@@ -259,6 +259,21 @@ class ProntuarioForm(forms.ModelForm):
             "observacoes": "Observações",
         }
 
+class OdontogramaObservacoesForm(forms.ModelForm):
+    class Meta:
+        model = Odontograma
+        fields = ["observacoes"]
+        widgets = {"observacoes": forms.Textarea(attrs={"rows": 3})}
+        labels = {"observacoes": "Observações gerais do odontograma"}
+
+
+class DenteForm(forms.ModelForm):
+    class Meta:
+        model = Dente
+        fields = ["status", "observacoes"]
+        widgets = {"observacoes": forms.Textarea(attrs={"rows": 3})}
+
+
 
 class TratamentoForm(_DentePorNumeroMixin, forms.ModelForm):
     class Meta:

@@ -12,6 +12,8 @@ from .forms import (
     ProcedimentoForm,
     TratamentoForm,
     ProntuarioForm,
+    OdontogramaObservacoesForm,
+    DenteForm
 )
 from .models import (
     DENTES_DECIDUOS,
@@ -70,6 +72,126 @@ def prontuario_update(request, pk):
         request,
         "DentalTech/pacientes/prontuario_form.html",
         {"form": form, "paciente": paciente},
+    )
+
+# ==========================================================
+# Odontograma e dentes
+# ==========================================================
+
+def _arcadas(dentes, decidua):
+    """Monta os 4 quadrantes na ordem visual (da direita do paciente p/ esquerda)."""
+    def d(numero):
+        dente = dentes.get(numero)
+        return {
+            "numero": numero,
+            "status": dente.status if dente else "SEM_REGISTRO",
+            "rotulo": dente.get_status_display() if dente else "Sem registro",
+            "obs": bool(dente and dente.observacoes),
+        }
+
+    if decidua:
+        sup_d, sup_e = range(55, 50, -1), range(61, 66)
+        inf_d, inf_e = range(85, 80, -1), range(71, 76)
+    else:
+        sup_d, sup_e = range(18, 10, -1), range(21, 29)
+        inf_d, inf_e = range(48, 40, -1), range(31, 39)
+
+    return {
+        "superior": [[d(n) for n in sup_d], [d(n) for n in sup_e]],
+        "inferior": [[d(n) for n in inf_d], [d(n) for n in inf_e]],
+    }
+
+
+@login_required
+def odontograma_detail(request, pk):
+    paciente = get_paciente_ou_404(request, pk)
+    odontograma = Odontograma.objects.filter(paciente=paciente).first()
+    decidua = request.GET.get("denticao") == "decidua"
+
+    form = OdontogramaObservacoesForm(
+        request.POST or None,
+        instance=odontograma or Odontograma(paciente=paciente),
+    )
+
+    if request.method == "POST" and form.is_valid():
+        odontograma = form.save()
+        registrar(request, Acao.ALTEROU, odontograma, campos=["observacoes"])
+        messages.success(request, "Observações do odontograma salvas.")
+        return redirect("DentalTech:odontograma", pk=paciente.pk)
+
+    dentes = {}
+    if odontograma:
+        dentes = {d.numero: d for d in odontograma.dentes.all()}
+    if request.method != "POST":
+        registrar(request, Acao.VISUALIZOU, odontograma or paciente,
+                  paciente=paciente, modelo="Odontograma")
+
+    return render(
+        request,
+        "DentalTech/pacientes/odontograma.html",
+        {
+            "paciente": paciente,
+            "arcadas": _arcadas(dentes, decidua),
+            "decidua": decidua,
+            "status_choices": Dente.Status.choices,
+            "form": form,
+        },
+    )
+
+
+@login_required
+def dente_update(request, pk, numero):
+    paciente = get_paciente_ou_404(request, pk)
+
+    if numero not in DENTES_PERMANENTES + DENTES_DECIDUOS:
+        return redirect("DentalTech:odontograma", pk=paciente.pk)
+
+    odontograma = Odontograma.objects.filter(paciente=paciente).first()
+    dente = None
+    if odontograma:
+        dente = Dente.objects.filter(odontograma=odontograma, numero=numero).first()
+
+    form = DenteForm(request.POST or None, instance=dente)
+
+    if form.is_valid():
+        campos = list(form.changed_data)
+        dente = paciente.obter_dente(numero)
+        dente.status = form.cleaned_data["status"]
+        dente.observacoes = form.cleaned_data["observacoes"]
+        dente.save()
+        registrar(request, Acao.ALTEROU, dente, campos=campos)
+        messages.success(request, f"Dente {numero} atualizado.")
+        destino = reverse("DentalTech:odontograma", args=[paciente.pk])
+        if numero in DENTES_DECIDUOS:
+            destino += "?denticao=decidua"
+        return redirect(destino)
+
+    tratamentos = procedimentos = []
+    if dente:
+        tratamentos = dente.tratamentos.all()
+        procedimentos = (
+            AtendimentoProcedimento.objects
+            .filter(dente=dente)
+            .select_related("procedimento", "atendimento__agendamento", "atendimento__profissional")
+            .order_by("-atendimento__data")
+        )
+    else:
+        registrar(request, Acao.VISUALIZOU, paciente, modelo="Dente",
+                  detalhes=f"Dente {numero}")
+
+    if dente:
+        registrar(request, Acao.VISUALIZOU, dente)
+
+    return render(
+        request,
+        "DentalTech/pacientes/dente_form.html",
+        {
+            "paciente": paciente,
+            "numero": numero,
+            "form": form,
+            "tratamentos": tratamentos,
+            "procedimentos": procedimentos,
+        },
     )
 
 

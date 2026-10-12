@@ -1,0 +1,51 @@
+{% extends "DentalTech/base.html" %}
+
+{% block title %}Dente {{ numero }} | Harmoniê{% endblock %}
+{% block heading %}Dente {{ numero }}{% endblock %}
+
+{% block content %}
+<div class="context card">
+    <b>{{ paciente.nome }}</b>
+    <a class="link" href="{% url 'DentalTech:odontograma' paciente.pk %}">← Voltar ao odontograma</a>
+</div>
+
+<div class="grid-two">
+    <form method="post" class="card form-card">
+        {% csrf_token %}
+        {% for field in form %}
+            <label>
+                {{ field.label }}
+                {{ field }}
+                {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+            </label>
+        {% endfor %}
+        <div class="form-actions">
+            <a href="{% url 'DentalTech:odontograma' paciente.pk %}">Cancelar</a>
+            <button type="submit" class="button">Salvar dente</button>
+        </div>
+    </form>
+
+    <div class="card">
+        <h2>Histórico do dente</h2>
+        {% for t in tratamentos %}
+            <div class="list-row">
+                <div>
+                    <b>{{ t.nome }}</b>
+                    <small>{% if t.concluido %}Concluído{% else %}Em andamento{% endif %}{% if t.data_inicio %} · desde {{ t.data_inicio|date:"d/m/Y" }}{% endif %}</small>
+                </div>
+            </div>
+        {% endfor %}
+        {% for p in procedimentos %}
+            <div class="list-row">
+                <div>
+                    <b>{{ p.procedimento.nome }}</b>
+                    <small>{{ p.atendimento.agendamento.data|date:"d/m/Y" }} · {{ p.atendimento.profissional.nome }}</small>
+                </div>
+            </div>
+        {% endfor %}
+        {% if not tratamentos and not procedimentos %}
+            <p class="empty">Nenhum tratamento ou procedimento registrado neste dente.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
