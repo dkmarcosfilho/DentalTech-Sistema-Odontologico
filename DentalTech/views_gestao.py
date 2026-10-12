@@ -140,6 +140,54 @@ def usuario_recusar(request, pk):
     return redirect("DentalTech:usuarios")
 
 
+# ==========================================================
+# Auditoria
+# ==========================================================
+
+@admin_required
+def auditoria_list(request):
+    logs = LogAuditoria.objects.select_related("usuario", "paciente")
+
+    usuario = request.GET.get("usuario", "").strip()
+    acao = request.GET.get("acao", "")
+    termo = request.GET.get("paciente", "").strip()
+    ini = parse_date(request.GET.get("de", ""))
+    fim = parse_date(request.GET.get("ate", ""))
+
+    if usuario:
+        logs = logs.filter(usuario_nome__icontains=usuario)
+    if acao in dict(Acao.choices):
+        logs = logs.filter(acao=acao)
+    else:
+        acao = ""
+    if termo:
+        logs = logs.filter(
+            Q(objeto_repr__icontains=termo) | Q(paciente__nome__icontains=termo)
+        )
+    if ini:
+        logs = logs.filter(criado_em__date__gte=ini)
+    if fim:
+        logs = logs.filter(criado_em__date__lte=fim)
+
+    pagina, querystring = paginar(request, logs, por_pagina=50)
+
+    return render(
+        request,
+        "DentalTech/auditoria/list.html",
+        {
+            "pagina": pagina,
+            "querystring": querystring,
+            "acoes": Acao.choices,
+            "filtros": {
+                "usuario": usuario, "acao": acao, "paciente": termo,
+                "de": request.GET.get("de", "") if ini else "",
+                "ate": request.GET.get("ate", "") if fim else "",
+            },
+        },
+    )
+
+
+
 
 # ==========================================================
 # Relatórios

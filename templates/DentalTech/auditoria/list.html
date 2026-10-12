@@ -1,0 +1,46 @@
+{% extends "DentalTech/base.html" %}
+
+{% block title %}Auditoria | Harmoniê{% endblock %}
+{% block heading %}Auditoria de acessos{% endblock %}
+
+{% block content %}
+<p class="page-intro">Quem viu, criou, alterou ou excluiu dados. Os registros guardam apenas os <b>nomes</b> dos campos alterados, nunca o conteúdo.</p>
+
+<form class="card filters" method="get">
+    <label>Usuário <input type="search" name="usuario" value="{{ filtros.usuario }}"></label>
+    <label>
+        Ação
+        <select name="acao">
+            <option value="">Todas</option>
+            {% for valor, rotulo in acoes %}
+                <option value="{{ valor }}" {% if filtros.acao == valor %}selected{% endif %}>{{ rotulo }}</option>
+            {% endfor %}
+        </select>
+    </label>
+    <label>Paciente / registro <input type="search" name="paciente" value="{{ filtros.paciente }}"></label>
+    <label>De <input type="date" name="de" value="{{ filtros.de }}"></label>
+    <label>Até <input type="date" name="ate" value="{{ filtros.ate }}"></label>
+    <button type="submit" class="button secondary">Filtrar</button>
+</form>
+
+<div class="card table-wrap">
+    <table>
+        <thead><tr><th>Quando</th><th>Usuário</th><th>Ação</th><th>Registro</th><th>Detalhes</th><th>IP</th></tr></thead>
+        <tbody>
+            {% for log in pagina %}
+                <tr>
+                    <td>{{ log.criado_em|date:"d/m/Y H:i:s" }}</td>
+                    <td>{{ log.usuario_nome|default:"—" }}</td>
+                    <td><span class="badge">{{ log.get_acao_display }}</span></td>
+                    <td><b>{{ log.modelo }}</b>{% if log.objeto_repr %}<small>{{ log.objeto_repr }}</small>{% endif %}</td>
+                    <td>{{ log.detalhes|default:"—" }}</td>
+                    <td>{{ log.ip|default:"—" }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="6" class="empty">Nenhum registro para os filtros selecionados.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include "DentalTech/_paginacao.html" %}
+{% endblock %}
