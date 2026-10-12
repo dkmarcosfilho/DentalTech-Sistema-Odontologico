@@ -12,6 +12,12 @@
 {% endblock %}
 
 {% block content %}
+    {% if usuarios_pendentes %}
+        <div class="alert warning" role="status">
+            <span>{{ usuarios_pendentes }} solicitação(ões) de acesso aguardando aprovação.
+            <a class="link" href="{% url 'DentalTech:usuarios' %}">Revisar agora</a></span>
+        </div>
+    {% endif %}
     <p class="page-intro">
         Resumo da clínica para <strong>{{ data_hoje|date:"d \d\e F" }}</strong>.
     </p>
