@@ -94,4 +94,11 @@ urlpatterns = [
         views.atendimento_update,
         name="atendimento_update",
     ),
+
+       # Procedimentos (cadastro e preços)
+    path("procedimentos/", views_clinico.procedimento_list, name="procedimentos"),
+    path("procedimentos/novo/", views_clinico.procedimento_create, name="procedimento_create"),
+    path("procedimentos/<int:pk>/editar/", views_clinico.procedimento_update, name="procedimento_update"),
 ]
+
+
