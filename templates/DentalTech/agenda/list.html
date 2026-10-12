@@ -1,12 +1,7 @@
 {% extends "DentalTech/base.html" %}
 
-{% block title %}
-    Agenda | Harmoniê
-{% endblock %}
-
-{% block heading %}
-    Agenda
-{% endblock %}
+{% block title %}Agenda | Harmoniê{% endblock %}
+{% block heading %}Agenda{% endblock %}
 
 {% block header_action %}
     <a class="button" href="{% url 'DentalTech:agendamento_create' %}">
@@ -20,173 +15,138 @@
 <form class="card filters" method="get">
 
     <label>
+        Período
+        <select name="periodo">
+            {% for valor, rotulo in periodos %}
+                <option value="{{ valor }}" {% if filtros.periodo == valor %}selected{% endif %}>{{ rotulo }}</option>
+            {% endfor %}
+        </select>
+    </label>
+
+    <label>
         Data
-        <input
-            type="date"
-            name="data"
-            value="{{ filtros.data }}"
-        >
+        <input type="date" name="data" value="{{ filtros.data }}">
+    </label>
+
+    <label>
+        Paciente
+        <input type="search" name="q" value="{{ filtros.q }}" placeholder="Nome">
     </label>
 
     <label>
         Status
         <select name="status">
-
-            <option value="">
-                Todos os status
-            </option>
-
+            <option value="">Todos os status</option>
             {% for value, label in status_choices %}
-                <option
-                    value="{{ value }}"
-                    {% if filtros.status == value %}
-                        selected
-                    {% endif %}
-                >
-                    {{ label }}
-                </option>
+                <option value="{{ value }}" {% if filtros.status == value %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
-
         </select>
     </label>
 
+    {% if acesso_geral %}
     <label>
-        Profissional
+        Dentista
         <select name="profissional">
-
-            <option value="">
-                Todos os profissionais
-            </option>
-
+            <option value="">Todos os dentistas</option>
             {% for profissional in profissionais %}
-                <option
-                    value="{{ profissional.pk }}"
-                    {% if filtros.profissional == profissional.pk|stringformat:"s" %}
-                        selected
-                    {% endif %}
-                >
-                    {{ profissional.nome }}
-                </option>
+                <option value="{{ profissional.pk }}" {% if filtros.profissional == profissional.pk|stringformat:"s" %}selected{% endif %}>{{ profissional.nome }}</option>
             {% endfor %}
-
         </select>
     </label>
+    {% endif %}
 
-    <button type="submit" class="button secondary">
-        Filtrar
-    </button>
-
+    <button type="submit" class="button secondary">Filtrar</button>
 </form>
 
-
 <div class="card table-wrap">
-
     <table>
-
         <thead>
             <tr>
                 <th>Data e hora</th>
                 <th>Paciente</th>
-                <th>Profissional</th>
+                <th>Dentista</th>
                 <th>Status</th>
                 <th class="actions"></th>
             </tr>
         </thead>
 
         <tbody>
-
-            {% for item in agendamentos %}
-
+            {% for item in pagina %}
                 <tr>
-
                     <td>
-                        <b>
-                            {{ item.data|date:"d/m/Y" }}
-                        </b>
-
-                        <small>
-                            {{ item.horario|time:"H:i" }}
-                        </small>
+                        <b>{{ item.data|date:"d/m/Y" }}</b>
+                        <small>{{ item.horario|time:"H:i" }}</small>
                     </td>
 
-
                     <td>
-
                         <div class="cell-person">
                             <span class="avatar">{{ item.paciente.nome|first|upper }}</span>
                             <div>
-                                <a
-                                    class="link"
-                                    href="{% url 'DentalTech:paciente_detail' item.paciente.pk %}"
-                                >
-                                    {{ item.paciente.nome }}
-                                </a>
-
-                                <small>
-                                    {{ item.motivo|default:"Consulta odontológica" }}
-                                </small>
+                                <a class="link" href="{% url 'DentalTech:paciente_detail' item.paciente.pk %}">{{ item.paciente.nome }}</a>
+                                <small>{{ item.motivo|default:"Consulta odontológica" }}</small>
                             </div>
                         </div>
-
                     </td>
 
+                    <td>{{ item.profissional.nome }}</td>
 
                     <td>
-                        {{ item.profissional.nome }}
+                        <span class="badge {{ item.status|lower }}">{{ item.get_status_display }}</span>
                     </td>
-
-
-                    <td>
-
-                        <span class="badge {{ item.status|lower }}">
-                            {{ item.get_status_display }}
-                        </span>
-
-                    </td>
-
 
                     <td class="actions">
-
                         <div class="row-actions">
 
-                            <a href="{% url 'DentalTech:agendamento_update' item.pk %}">
-                                Editar
-                            </a>
+                            {% if item.status != "REALIZADA" %}
+                                <a href="{% url 'DentalTech:agendamento_update' item.pk %}">Editar</a>
+                            {% endif %}
+
+                            {% if item.status == "AGENDADA" %}
+                                <form method="post" action="{% url 'DentalTech:agendamento_status' item.pk 'CONFIRMADA' %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <button type="submit">Confirmar</button>
+                                </form>
+                            {% endif %}
 
                             {% if item.status != "CANCELADA" %}
-
                                 {% if item.atendimento %}
-                                    <a href="{% url 'DentalTech:atendimento_detail' item.atendimento.pk %}">
-                                        Atendimento
-                                    </a>
+                                    <a href="{% url 'DentalTech:atendimento_detail' item.atendimento.pk %}">Atendimento</a>
                                 {% else %}
-                                    <a class="primary" href="{% url 'DentalTech:atendimento_create' item.pk %}">
-                                        Registrar
-                                    </a>
+                                    <a class="primary" href="{% url 'DentalTech:atendimento_create' item.pk %}">Registrar</a>
                                 {% endif %}
+                            {% endif %}
 
+                            {% if item.status == "AGENDADA" or item.status == "CONFIRMADA" %}
+                                <form method="post" action="{% url 'DentalTech:agendamento_status' item.pk 'CANCELADA' %}"
+                                      data-confirm="Cancelar o agendamento de {{ item.paciente.nome }}?">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <button type="submit" class="danger">Cancelar</button>
+                                </form>
+                            {% endif %}
+
+                            {% if not item.atendimento %}
+                                <form method="post" action="{% url 'DentalTech:agendamento_delete' item.pk %}"
+                                      data-confirm="Excluir definitivamente o agendamento de {{ item.paciente.nome }}?">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <button type="submit" class="danger">Excluir</button>
+                                </form>
                             {% endif %}
 
                         </div>
-
                     </td>
-
                 </tr>
-
             {% empty %}
-
                 <tr>
-                    <td colspan="5" class="empty">
-                        Nenhum agendamento para os filtros selecionados.
-                    </td>
+                    <td colspan="5" class="empty">Nenhum agendamento para os filtros selecionados.</td>
                 </tr>
-
             {% endfor %}
-
         </tbody>
-
     </table>
-
 </div>
+
+{% include "DentalTech/_paginacao.html" %}
 
 {% endblock %}

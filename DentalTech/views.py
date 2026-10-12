@@ -381,213 +381,245 @@ def paciente_delete(request, pk):
             "cancel_pk": paciente.pk,
         },
     )
+
+# ==========================================================
+# Agenda
+# ==========================================================
+
+def _destino(request, padrao="DentalTech:agenda"):
+    """Destino pós-ação vindo do formulário, só se for um endereço do próprio site."""
+    proximo = request.POST.get("next", "")
+    if proximo and url_has_allowed_host_and_scheme(
+        proximo,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return proximo
+    return padrao
+
+
+PERIODOS = [
+    ("proximos", "Próximos"),
+    ("hoje", "Hoje"),
+    ("passados", "Passados"),
+    ("todos", "Todos"),
+]
+
+
 @login_required
 def agendamento_list(request):
     profissional_logado = get_profissional_logado(request)
+    agendamentos = agendamentos_visiveis(request).select_related("atendimento")
+    hoje = timezone.localdate()
 
-    agendamentos = Agendamento.objects.select_related(
-        "paciente",
-        "profissional",
-    )
-
-    if profissional_logado:
-        agendamentos = agendamentos.filter(
-            profissional=profissional_logado
-        )
-
-    data = request.GET.get("data", "")
+    data_txt = request.GET.get("data", "")
     status = request.GET.get("status", "")
-    profissional_filtro = request.GET.get(
-        "profissional",
-        "",
-    )
+    profissional_filtro = request.GET.get("profissional", "")
+    termo = request.GET.get("q", "").strip()
+    periodo = request.GET.get("periodo", "proximos")
+    if periodo not in dict(PERIODOS):
+        periodo = "proximos"
+
+    data = parse_date(data_txt) if data_txt else None
 
     if data:
-        agendamentos = agendamentos.filter(
-            data=data
-        )
+        agendamentos = agendamentos.filter(data=data)
+    elif periodo == "proximos":
+        agendamentos = agendamentos.filter(data__gte=hoje)
+    elif periodo == "hoje":
+        agendamentos = agendamentos.filter(data=hoje)
+    elif periodo == "passados":
+        agendamentos = agendamentos.filter(data__lt=hoje).order_by("-data", "-horario")
 
-    if status:
-        agendamentos = agendamentos.filter(
-            status=status
-        )
+    if status in dict(Agendamento.Status.choices):
+        agendamentos = agendamentos.filter(status=status)
+    else:
+        status = ""
 
-    if profissional_logado:
-        profissional_filtro = str(
-            profissional_logado.pk
-        )
-
-    elif profissional_filtro:
-        agendamentos = agendamentos.filter(
-            profissional_id=profissional_filtro
-        )
+    if termo:
+        agendamentos = agendamentos.filter(paciente__nome__icontains=termo)
 
     if profissional_logado:
-        profissionais = Profissional.objects.filter(
-            pk=profissional_logado.pk
-        )
+        profissional_filtro = str(profissional_logado.pk)
+        profissionais = Profissional.objects.filter(pk=profissional_logado.pk)
     else:
         profissionais = Profissional.objects.all()
+        if profissional_filtro.isdigit():
+            agendamentos = agendamentos.filter(profissional_id=int(profissional_filtro))
+        else:
+            profissional_filtro = ""
+
+    pagina, querystring = paginar(request, agendamentos)
 
     return render(
         request,
         "DentalTech/agenda/list.html",
         {
-            "agendamentos": agendamentos,
+            "pagina": pagina,
+            "querystring": querystring,
             "profissionais": profissionais,
             "status_choices": Agendamento.Status.choices,
+            "periodos": PERIODOS,
             "filtros": {
-                "data": data,
+                "data": data_txt if data else "",
                 "status": status,
                 "profissional": profissional_filtro,
+                "q": termo,
+                "periodo": periodo,
             },
-            "acesso_geral": usuario_tem_acesso_geral(
-                request
-            ),
+            "acesso_geral": usuario_tem_acesso_geral(request),
         },
     )
+
+
+def _salvar_agendamento(request, form, profissional_logado, novo):
+    """Salva o agendamento; devolve True se deu certo."""
+    agendamento = form.save(commit=False)
+    campos = list(form.changed_data)
+
+    if profissional_logado:
+        agendamento.profissional = profissional_logado
+
+    try:
+        with transaction.atomic():
+            agendamento.save()
+            # Quando o admin agenda, o paciente passa a ser do dentista
+            # (vínculo explícito, avisado na mensagem abaixo).
+            vinculado = False
+            if not agendamento.paciente.profissionais.filter(
+                pk=agendamento.profissional_id
+            ).exists():
+                agendamento.paciente.profissionais.add(agendamento.profissional)
+                vinculado = True
+    except IntegrityError:
+        # Outra pessoa pegou o horário no mesmo instante.
+        form.add_error(None, "Este horário acabou de ser ocupado. Escolha outro.")
+        return False
+
+    registrar(
+        request,
+        Acao.CRIOU if novo else Acao.ALTEROU,
+        agendamento,
+        campos=None if novo else campos,
+    )
+    if vinculado:
+        registrar(
+            request, Acao.ALTEROU, agendamento.paciente,
+            campos=["profissionais"],
+            detalhes=f"Vinculado a {agendamento.profissional.nome} ao agendar",
+        )
+        messages.info(
+            request,
+            f"{agendamento.paciente.nome} foi vinculado(a) a "
+            f"{agendamento.profissional.nome}.",
+        )
+    messages.success(
+        request,
+        "Agendamento criado com sucesso." if novo else "Agendamento atualizado.",
+    )
+    return True
 
 
 @login_required
 def agendamento_create(request):
     profissional_logado = get_profissional_logado(request)
-
-    if (
-        profissional_logado is None
-        and not usuario_tem_acesso_geral(request)
-    ):
-        raise PermissionDenied
+    inicial = {}
+    paciente_id = request.GET.get("paciente", "")
+    if paciente_id.isdigit():
+        inicial["paciente"] = int(paciente_id)
 
     form = AgendamentoForm(
-        request.POST or None
+        request.POST or None,
+        profissional=profissional_logado,
+        initial=inicial,
     )
 
-    if form.is_valid():
-        agendamento = form.save(commit=False)
-
-        if profissional_logado:
-            agendamento.profissional = profissional_logado
-
-        else:
-            profissional_id = request.POST.get(
-                "profissional"
-            )
-
-            if not profissional_id:
-                form.add_error(
-                    None,
-                    "Selecione o dentista responsável "
-                    "pelo agendamento.",
-                )
-
-                return render(
-                    request,
-                    "DentalTech/agenda/form.html",
-                    {
-                        "form": form,
-                        "titulo": "Novo agendamento",
-                        "acesso_geral": True,
-                    },
-                )
-
-            agendamento.profissional_id = profissional_id
-
-        agendamento.save()
-
-        messages.success(
-            request,
-            "Agendamento criado com sucesso.",
-        )
-
-        return redirect(
-            "DentalTech:agenda"
-        )
-
-    if usuario_tem_acesso_geral(request):
-        profissionais = Profissional.objects.order_by(
-            "nome"
-        )
-    else:
-        profissionais = None
+    if form.is_valid() and _salvar_agendamento(request, form, profissional_logado, True):
+        return redirect("DentalTech:agenda")
 
     return render(
         request,
         "DentalTech/agenda/form.html",
-        {
-            "form": form,
-            "titulo": "Novo agendamento",
-            "profissionais": profissionais,
-            "acesso_geral": usuario_tem_acesso_geral(
-                request
-            ),
-        },
+        {"form": form, "titulo": "Novo agendamento"},
     )
 
 
 @login_required
 def agendamento_update(request, pk):
-    profissional_logado = get_profissional_logado(
-        request
-    )
-
-    if profissional_logado:
-        agendamento = get_object_or_404(
-            Agendamento,
-            pk=pk,
-            profissional=profissional_logado,
-        )
-    else:
-        agendamento = get_object_or_404(
-            Agendamento,
-            pk=pk,
-        )
+    profissional_logado = get_profissional_logado(request)
+    agendamento = get_object_or_404(agendamentos_visiveis(request), pk=pk)
 
     form = AgendamentoForm(
         request.POST or None,
         instance=agendamento,
+        profissional=profissional_logado,
     )
 
-    if form.is_valid():
-        agendamento_atualizado = form.save(
-            commit=False
-        )
-
-        if profissional_logado:
-            agendamento_atualizado.profissional = (
-                profissional_logado
-            )
-
-        agendamento_atualizado.save()
-
-        messages.success(
-            request,
-            "Agendamento atualizado.",
-        )
-
-        return redirect(
-            "DentalTech:agenda"
-        )
-
-    profissionais = (
-        Profissional.objects.order_by("nome")
-        if usuario_tem_acesso_geral(request)
-        else None
-    )
+    if form.is_valid() and _salvar_agendamento(request, form, profissional_logado, False):
+        return redirect("DentalTech:agenda")
 
     return render(
         request,
         "DentalTech/agenda/form.html",
-        {
-            "form": form,
-            "titulo": "Editar agendamento",
-            "agendamento": agendamento,
-            "profissionais": profissionais,
-            "acesso_geral": usuario_tem_acesso_geral(
-                request
-            ),
-        },
+        {"form": form, "titulo": "Editar agendamento", "agendamento": agendamento},
     )
 
+
+@login_required
+@require_POST
+def agendamento_status(request, pk, novo_status):
+    """Confirma ou cancela um agendamento com um clique."""
+    Status = Agendamento.Status
+    if novo_status not in (Status.CONFIRMADA, Status.CANCELADA):
+        raise Http404
+
+    agendamento = get_object_or_404(agendamentos_visiveis(request), pk=pk)
+    anterior = agendamento.status
+
+    if anterior in (Status.REALIZADA, Status.CANCELADA, Status.REMARCADA) or (
+        novo_status == Status.CONFIRMADA and anterior != Status.AGENDADA
+    ):
+        messages.error(
+            request,
+            f"Um agendamento {agendamento.get_status_display().lower()} "
+            "não pode mudar para este status.",
+        )
+    else:
+        agendamento.status = novo_status
+        agendamento.save(update_fields=["status", "atualizado_em"])
+        registrar(
+            request, Acao.ALTEROU, agendamento,
+            campos=["status"], detalhes=f"{anterior} → {novo_status}",
+        )
+        messages.success(
+            request,
+            "Agendamento cancelado." if novo_status == Status.CANCELADA
+            else "Agendamento confirmado.",
+        )
+
+    return redirect(_destino(request))
+
+
+@login_required
+@require_POST
+def agendamento_delete(request, pk):
+    agendamento = get_object_or_404(agendamentos_visiveis(request), pk=pk)
+
+    if Atendimento.objects.filter(agendamento=agendamento).exists():
+        messages.error(
+            request,
+            "Este agendamento já tem atendimento registrado e não pode ser "
+            "excluído.",
+        )
+        return redirect("DentalTech:agenda")
+
+    registrar(request, Acao.EXCLUIU, agendamento)
+    agendamento.delete()
+    messages.success(request, "Agendamento excluído.")
+    return redirect(_destino(request))
+
+
+#DENTISTA
 
 @login_required
 def dentistas(request):

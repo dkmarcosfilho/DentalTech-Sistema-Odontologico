@@ -236,6 +236,138 @@ class _DentePorNumeroMixin:
             return None
         return self.paciente.obter_dente(int(numero))
 
+
+# ==========================================================
+# Agenda
+# ==========================================================
+
+class AgendamentoForm(forms.ModelForm):
+    class Meta:
+        model = Agendamento
+        fields = [
+            "paciente",
+            "profissional",
+            "data",
+            "horario",
+            "status",
+            "motivo",
+            "observacoes",
+        ]
+        widgets = {
+            "data": DateInput(),
+            "horario": TimeInput(),
+        }
+        labels = {
+            "paciente": "Paciente",
+            "profissional": "Dentista",
+            "data": "Data",
+            "horario": "Horário",
+            "status": "Status",
+            "motivo": "Motivo da consulta",
+            "observacoes": "Observações",
+        }
+
+    def __init__(self, *args, profissional=None, **kwargs):
+        """
+        profissional: dentista logado. Quando informado, o campo "Dentista"
+        some do formulário (ele só agenda para si) e a lista de pacientes
+        mostra apenas os pacientes vinculados a ele.
+        """
+        super().__init__(*args, **kwargs)
+        self.profissional_fixo = profissional
+
+        if profissional:
+            del self.fields["profissional"]
+            pacientes = profissional.pacientes.order_by("nome")
+        else:
+            self.fields["profissional"].queryset = Profissional.objects.order_by("nome")
+            self.fields["profissional"].required = True
+            pacientes = Paciente.objects.order_by("nome")
+
+        self.fields["paciente"].queryset = pacientes
+
+        # "Realizada" só nasce de um atendimento registrado.
+        if self.instance.status != Agendamento.Status.REALIZADA:
+            self.fields["status"].choices = [
+                c for c in Agendamento.Status.choices
+                if c[0] != Agendamento.Status.REALIZADA
+            ]
+
+    def clean(self):
+        dados = super().clean()
+        data = dados.get("data")
+        horario = dados.get("horario")
+        status = dados.get("status")
+        paciente = dados.get("paciente")
+        profissional = self.profissional_fixo or dados.get("profissional")
+
+        if not (data and horario):
+            return dados
+
+        mudou_horario = (
+            self.instance.pk is None
+            or self.instance.data != data
+            or self.instance.horario != horario
+        )
+
+        if (
+            status in Agendamento.STATUS_PENDENTES
+            and mudou_horario
+            and timezone.make_aware(datetime.combine(data, horario)) < timezone.now()
+        ):
+            self.add_error(None, "Não é possível agendar em um horário que já passou.")
+
+        if status in Agendamento.STATUS_LIBERAM_HORARIO or not profissional:
+            return dados
+
+        outros = Agendamento.objects.filter(
+            data=data, horario=horario
+        ).exclude(status__in=Agendamento.STATUS_LIBERAM_HORARIO)
+        if self.instance.pk:
+            outros = outros.exclude(pk=self.instance.pk)
+
+        if outros.filter(profissional=profissional).exists():
+            self.add_error(
+                None,
+                "Este dentista já tem um agendamento neste horário. "
+                "Escolha outro horário.",
+            )
+        elif paciente and outros.filter(paciente=paciente).exists():
+            self.add_error(
+                None,
+                "Este paciente já tem outro agendamento neste mesmo horário.",
+            )
+
+        return dados
+
+    def validate_constraints(self):
+        # O conflito de horário já foi explicado em clean(); a regra do
+        # banco continua valendo como segunda barreira.
+        if self._errors:
+            return
+        super().validate_constraints()
+
+
+class _DentePorNumeroMixin:
+    """Escolhe o dente pelo número (FDI); o registro é criado sob demanda."""
+
+    def _configurar_dente(self, paciente):
+        self.paciente = paciente
+        self.fields["dente_numero"] = forms.ChoiceField(
+            choices=CHOICES_DENTES, required=False, label="Dente",
+        )
+        dente = getattr(self.instance, "dente", None) if self.instance.pk else None
+        if dente:
+            self.initial["dente_numero"] = str(dente.numero)
+
+    def _dente(self):
+        numero = self.cleaned_data.get("dente_numero")
+        if not numero:
+            return None
+        return self.paciente.obter_dente(int(numero))
+
+
+
 # ==========================================================
 # Clínico: prontuário, odontograma, tratamentos, procedimentos
 # ==========================================================
