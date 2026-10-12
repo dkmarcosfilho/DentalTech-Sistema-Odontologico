@@ -1,14 +1,19 @@
-from datetime import date
-
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import ProtectedError, Q
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.utils.dateparse import parse_date
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 
+from .auditoria import registrar
 from .forms import (
     AgendamentoForm,
     CadastroForm,
@@ -21,10 +26,23 @@ from .forms import (
 from .models import (
     Agendamento,
     Atendimento,
+    LogAuditoria,
     Paciente,
     Profissional,
     Relatorio,
 )
+
+from .permissoes import (  # noqa: F401  (reexportados para compatibilidade)
+    admin_required,
+    agendamentos_visiveis,
+    get_paciente_ou_404,
+    get_profissional_logado,
+    pacientes_visiveis,
+    usuario_tem_acesso_geral,
+)
+from .utils import paginar, so_digitos
+
+Acao = LogAuditoria.Acao
 
 
 def get_profissional_logado(request):
@@ -184,34 +202,42 @@ def logout_view(request):
     return redirect("DentalTech:login")
 
 
+# ==========================================================
+# Pacientes
+# ==========================================================
+
 @login_required
 def paciente_list(request):
-    profissional = get_profissional_logado(request)
     termo = request.GET.get("q", "").strip()
-
-    if profissional:
-        pacientes = Paciente.objects.filter(
-            agendamentos__profissional=profissional
-        ).distinct()
-    else:
-        pacientes = Paciente.objects.all()
+    pacientes = pacientes_visiveis(request)
 
     if termo:
-        pacientes = pacientes.filter(
+        filtro = (
             Q(nome__icontains=termo)
-            | Q(cpf__icontains=termo)
             | Q(email__icontains=termo)
             | Q(telefone__icontains=termo)
         )
+        digitos = so_digitos(termo)
+        if digitos:
+            # "529.982" e "529982" encontram o mesmo CPF.
+            filtro |= Q(cpf__icontains=digitos)
+        pacientes = pacientes.filter(filtro)
 
+    acesso_geral = usuario_tem_acesso_geral(request)
     pacientes = pacientes.order_by("nome")
+    if acesso_geral:
+        pacientes = pacientes.prefetch_related("profissionais")
+
+    pagina, querystring = paginar(request, pacientes)
 
     return render(
         request,
         "DentalTech/pacientes/list.html",
         {
-            "pacientes": pacientes,
+            "pagina": pagina,
+            "querystring": querystring,
             "termo": termo,
+            "acesso_geral": acesso_geral,
         },
     )
 
@@ -219,154 +245,100 @@ def paciente_list(request):
 @login_required
 def paciente_detail(request, pk):
     profissional = get_profissional_logado(request)
+    paciente = get_paciente_ou_404(request, pk)
 
+    agendamentos = paciente.agendamentos.select_related("profissional")
     if profissional:
-        paciente = get_object_or_404(
-            Paciente.objects.prefetch_related(
-                "agendamentos__profissional"
-            ),
-            pk=pk,
-            agendamentos__profissional=profissional,
-        )
+        agendamentos = agendamentos.filter(profissional=profissional)
 
-        agendamentos = paciente.agendamentos.filter(
-            profissional=profissional
-        ).select_related("profissional")
-
-    else:
-        paciente = get_object_or_404(
-            Paciente.objects.prefetch_related(
-                "agendamentos__profissional"
-            ),
-            pk=pk,
-        )
-
-        agendamentos = paciente.agendamentos.select_related(
-            "profissional"
-        )
+    registrar(request, Acao.VISUALIZOU, paciente)
 
     return render(
         request,
         "DentalTech/pacientes/detail.html",
         {
             "paciente": paciente,
-            "agendamentos": agendamentos,
+            "agendamentos": agendamentos[:30],
+            "profissionais": paciente.profissionais.all(),
+            "acesso_geral": usuario_tem_acesso_geral(request),
         },
     )
 
 
 @login_required
 def paciente_create(request):
-    form = PacienteForm(request.POST or None)
+    profissional = get_profissional_logado(request)
+    form = PacienteForm(request.POST or None, acesso_geral=profissional is None)
 
     if form.is_valid():
-        paciente = form.save()
+        with transaction.atomic():
+            paciente = form.save()
+            if profissional:
+                paciente.profissionais.add(profissional)
 
-        messages.success(
-            request,
-            "Paciente cadastrado com sucesso. "
-            "Agora crie um agendamento para vinculá-lo ao dentista.",
-        )
-
-        return redirect(
-            "DentalTech:paciente_detail",
-            pk=paciente.pk,
-        )
+        registrar(request, Acao.CRIOU, paciente)
+        messages.success(request, "Paciente cadastrado com sucesso.")
+        return redirect("DentalTech:paciente_detail", pk=paciente.pk)
 
     return render(
         request,
         "DentalTech/pacientes/form.html",
-        {
-            "form": form,
-            "titulo": "Novo paciente",
-        },
+        {"form": form, "titulo": "Novo paciente"},
     )
 
 
 @login_required
 def paciente_update(request, pk):
     profissional = get_profissional_logado(request)
-
-    if profissional:
-        paciente = get_object_or_404(
-            Paciente,
-            pk=pk,
-            agendamentos__profissional=profissional,
-        )
-    else:
-        paciente = get_object_or_404(
-            Paciente,
-            pk=pk,
-        )
+    paciente = get_paciente_ou_404(request, pk)
 
     form = PacienteForm(
         request.POST or None,
         instance=paciente,
+        acesso_geral=profissional is None,
     )
 
     if form.is_valid():
+        campos = list(form.changed_data)
         form.save()
-
-        messages.success(
-            request,
-            "Dados do paciente atualizados.",
-        )
-
-        return redirect(
-            "DentalTech:paciente_detail",
-            pk=paciente.pk,
-        )
+        registrar(request, Acao.ALTEROU, paciente, campos=campos)
+        messages.success(request, "Dados do paciente atualizados.")
+        return redirect("DentalTech:paciente_detail", pk=paciente.pk)
 
     return render(
         request,
         "DentalTech/pacientes/form.html",
-        {
-            "form": form,
-            "titulo": "Editar paciente",
-        },
+        {"form": form, "titulo": "Editar paciente"},
     )
+
 
 @login_required
 def paciente_delete(request, pk):
     """Exclui um paciente após confirmar os impactos no histórico."""
     profissional = get_profissional_logado(request)
+    paciente = get_paciente_ou_404(request, pk)
 
-    # Administradores veem todos os pacientes; dentistas só os vinculados
-    # a pelo menos um agendamento próprio.
-    pacientes = Paciente.objects.all()
-    if profissional:
-        pacientes = pacientes.filter(
-            agendamentos__profissional=profissional
-        ).distinct()
-
-    paciente = get_object_or_404(pacientes, pk=pk)
-    agendamentos = paciente.agendamentos.all()
-
-    # Um dentista não pode apagar um paciente que também tenha consultas
-    # com outros dentistas.
-    if profissional and agendamentos.exclude(
-        profissional=profissional
-    ).exists():
+    # Um dentista não pode apagar um paciente atendido também por colegas.
+    if profissional and paciente.profissionais.exclude(pk=profissional.pk).exists():
         messages.error(
             request,
-            "Este paciente tem agendamentos com outros dentistas. "
+            "Este paciente também é atendido por outros dentistas. "
             "Somente um administrador pode excluí-lo.",
         )
         return redirect("DentalTech:paciente_detail", pk=paciente.pk)
 
-    atendimentos = Atendimento.objects.filter(
-        agendamento__paciente=paciente
-    )
-    total_agendamentos = agendamentos.count()
-    total_atendimentos = atendimentos.count()
-    impactos = []
+    agendamentos = paciente.agendamentos.all()
+    atendimentos = Atendimento.objects.filter(agendamento__paciente=paciente)
 
-    if total_agendamentos:
-        impactos.append(f"{total_agendamentos} agendamento(s)")
-    if total_atendimentos:
-        impactos.append(
-            f"{total_atendimentos} atendimento(s) registrado(s)"
-        )
+    impactos = []
+    if agendamentos.count():
+        impactos.append(f"{agendamentos.count()} agendamento(s)")
+    if atendimentos.count():
+        impactos.append(f"{atendimentos.count()} atendimento(s) registrado(s)")
+    if hasattr(paciente, "prontuario"):
+        impactos.append("prontuário")
+    if hasattr(paciente, "odontograma"):
+        impactos.append("odontograma e tratamentos")
 
     if request.method == "POST":
         if impactos and not request.POST.get("confirmar_historico"):
@@ -378,6 +350,11 @@ def paciente_delete(request, pk):
             nome = paciente.nome
             try:
                 with transaction.atomic():
+                    # Registra antes: depois o paciente deixa de existir.
+                    registrar(
+                        request, Acao.EXCLUIU, paciente,
+                        detalhes="Exclusão com histórico: " + (", ".join(impactos) or "sem histórico"),
+                    )
                     # Atendimento protege o agendamento (PROTECT), por isso
                     # o histórico de atendimento é removido primeiro.
                     atendimentos.delete()
@@ -404,9 +381,6 @@ def paciente_delete(request, pk):
             "cancel_pk": paciente.pk,
         },
     )
-
-
-
 @login_required
 def agendamento_list(request):
     profissional_logado = get_profissional_logado(request)

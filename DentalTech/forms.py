@@ -51,6 +51,10 @@ CHOICES_DENTES = [("", "— nenhum —")] + [
 ]
 
 
+# ==========================================================
+# Pacientes
+# ==========================================================
+
 class PacienteForm(forms.ModelForm):
     class Meta:
         model = Paciente
@@ -62,10 +66,62 @@ class PacienteForm(forms.ModelForm):
             "email",
             "endereco",
             "observacoes",
+            "profissionais",
         ]
         widgets = {
-            "data_nascimento": DateInput()
+            "data_nascimento": DateInput(),
+            "cpf": forms.TextInput(attrs={
+                "data-mask": "cpf",
+                "inputmode": "numeric",
+                "placeholder": "000.000.000-00",
+                "autocomplete": "off",
+            }),
+            "telefone": forms.TextInput(attrs={
+                "data-mask": "telefone",
+                "inputmode": "tel",
+                "placeholder": "(00) 00000-0000",
+            }),
+            "profissionais": forms.CheckboxSelectMultiple(),
         }
+
+    def __init__(self, *args, acesso_geral=False, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if self.instance.pk:
+            self.initial["cpf"] = formatar_cpf(self.instance.cpf)
+
+        if acesso_geral:
+            self.fields["profissionais"].required = False
+            self.fields["profissionais"].queryset = Profissional.objects.order_by("nome")
+            self.fields["profissionais"].help_text = (
+                "Somente estes dentistas poderão ver a ficha do paciente."
+            )
+        else:
+            # Dentista comum: o vínculo é feito pela view (ele mesmo).
+            del self.fields["profissionais"]
+
+    def clean_cpf(self):
+        cpf = so_digitos(self.cleaned_data["cpf"])
+        existe = Paciente.objects.filter(cpf=cpf)
+
+        if self.instance.pk:
+            existe = existe.exclude(pk=self.instance.pk)
+
+        if existe.exists():
+            raise forms.ValidationError(
+                "Este CPF já está cadastrado na clínica. Se o paciente deve "
+                "ser atendido por você, peça a um administrador para "
+                "vinculá-lo ao seu perfil."
+            )
+
+        return cpf
+
+    def clean_data_nascimento(self):
+        data = self.cleaned_data["data_nascimento"]
+        if data > timezone.localdate():
+            raise forms.ValidationError("A data de nascimento não pode ser no futuro.")
+        return data
+
 
 
 class ProfissionalForm(forms.ModelForm):
