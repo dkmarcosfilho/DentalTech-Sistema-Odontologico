@@ -39,15 +39,18 @@
 
         {% if formset %}
             <h2>Procedimentos realizados</h2>
+            <p class="muted">O valor da tabela de preços é registrado no momento em que o atendimento é salvo.</p>
 
             {{ formset.management_form }}
 
             {% for procedure_form in formset %}
                 <div class="procedure-row">
+                    {% for hidden in procedure_form.hidden_fields %}{{ hidden }}{% endfor %}
                     {% for field in procedure_form.visible_fields %}
                         <label>
                             {{ field.label }}
                             {{ field }}
+                            {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
                         </label>
                     {% endfor %}
                 </div>

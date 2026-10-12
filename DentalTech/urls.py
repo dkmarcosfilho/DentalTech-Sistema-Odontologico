@@ -63,21 +63,10 @@ urlpatterns = [
     ),
 
     # Atendimentos
-    path(
-        "agenda/<int:agendamento_id>/atendimento/novo/",
-        views.atendimento_create,
-        name="atendimento_create",
-    ),
-    path(
-        "atendimentos/<int:pk>/",
-        views.atendimento_detail,
-        name="atendimento_detail",
-    ),
-    path(
-        "atendimentos/<int:pk>/editar/",
-        views.atendimento_update,
-        name="atendimento_update",
-    ),
+    path("agenda/<int:agendamento_id>/atendimento/novo/", views.atendimento_create, name="atendimento_create"),
+    path("atendimentos/<int:pk>/", views.atendimento_detail, name="atendimento_detail"),
+    path("atendimentos/<int:pk>/editar/", views.atendimento_update, name="atendimento_update"),
+
 
     # Pacientes
     path("pacientes/<int:pk>/tratamentos/", views_clinico.tratamento_list, name="tratamentos"),
