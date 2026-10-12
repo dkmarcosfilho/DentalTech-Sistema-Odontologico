@@ -1,4 +1,5 @@
 {% extends "DentalTech/base.html" %}
+{% load dentaltech_extras %}
 
 {% block title %}{{ paciente.nome }} | Harmoniê{% endblock %}
 
@@ -8,7 +9,7 @@
     <div style="display:flex; gap:10px; flex-wrap:wrap;">
         <a class="button secondary" href="{% url 'DentalTech:paciente_update' paciente.pk %}">Editar paciente</a>
         <a class="button secondary danger-outline" href="{% url 'DentalTech:paciente_delete' paciente.pk %}">Excluir</a>
-        <a class="button" href="{% url 'DentalTech:agendamento_create' %}">
+        <a class="button" href="{% url 'DentalTech:agendamento_create' %}?paciente={{ paciente.pk }}">
             <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
             Novo agendamento
         </a>
@@ -16,6 +17,13 @@
 {% endblock %}
 
 {% block content %}
+
+<div class="tab-links">
+    <a class="button secondary" href="{% url 'DentalTech:prontuario' paciente.pk %}">Prontuário</a>
+    <a class="button secondary" href="{% url 'DentalTech:odontograma' paciente.pk %}">Odontograma</a>
+    <a class="button secondary" href="{% url 'DentalTech:tratamentos' paciente.pk %}">Tratamentos</a>
+</div>
+
 <div class="grid-two">
 
     <div class="card">
@@ -23,14 +31,14 @@
             <span class="avatar lg">{{ paciente.nome|first|upper }}</span>
             <div>
                 <h2>{{ paciente.nome }}</h2>
-                <small>Cadastrado em {{ paciente.data_cadastro|date:"d/m/Y" }}</small>
+                <small>{{ paciente.idade }} anos &middot; cadastrado em {{ paciente.data_cadastro|date:"d/m/Y" }}</small>
             </div>
         </div>
 
         <h3>Dados pessoais</h3>
         <dl>
             <dt>CPF</dt>
-            <dd>{{ paciente.cpf }}</dd>
+            <dd>{{ paciente.cpf|cpf }}</dd>
 
             <dt>Nascimento</dt>
             <dd>{{ paciente.data_nascimento|date:"d/m/Y" }}</dd>
@@ -43,6 +51,11 @@
 
             <dt>Endereço</dt>
             <dd>{{ paciente.endereco|default:"—" }}</dd>
+
+            {% if acesso_geral %}
+                <dt>Dentistas responsáveis</dt>
+                <dd>{% for prof in profissionais %}{{ prof.nome }}{% if not forloop.last %}, {% endif %}{% empty %}Nenhum{% endfor %}</dd>
+            {% endif %}
         </dl>
 
         {% if paciente.observacoes %}
@@ -59,14 +72,10 @@
         {% for item in agendamentos %}
             <div class="appointment">
                 <time>{{ item.horario|time:"H:i" }}</time>
-
                 <div>
                     <b>{{ item.data|date:"d/m/Y" }}</b>
-                    <small>
-                        {{ item.motivo|default:"Consulta odontológica" }} · {{ item.profissional.nome }}
-                    </small>
+                    <small>{{ item.motivo|default:"Consulta odontológica" }} · {{ item.profissional.nome }}</small>
                 </div>
-
                 <span class="badge {{ item.status|lower }}">{{ item.get_status_display }}</span>
             </div>
         {% empty %}

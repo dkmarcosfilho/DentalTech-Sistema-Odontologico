@@ -14,26 +14,15 @@ urlpatterns = [
 
     # Pacientes
     path("pacientes/", views.paciente_list, name="pacientes"),
-    path(
-        "pacientes/novo/",
-        views.paciente_create,
-        name="paciente_create",
-    ),
-    path(
-        "pacientes/<int:pk>/",
-        views.paciente_detail,
-        name="paciente_detail",
-    ),
-    path(
-        "pacientes/<int:pk>/editar/",
-        views.paciente_update,
-        name="paciente_update",
-    ),
-    path(
-        "pacientes/<int:pk>/excluir/",
-        views.paciente_delete,
-        name="paciente_delete",
-    ),
+    path("pacientes/novo/", views.paciente_create, name="paciente_create"),
+    path("pacientes/<int:pk>/", views.paciente_detail, name="paciente_detail"),
+    path("pacientes/<int:pk>/editar/", views.paciente_update, name="paciente_update"),
+    path("pacientes/<int:pk>/excluir/", views.paciente_delete, name="paciente_delete"),
+    path("pacientes/<int:pk>/tratamentos/", views_clinico.tratamento_list, name="tratamentos"),
+    path("pacientes/<int:pk>/tratamentos/novo/", views_clinico.tratamento_create, name="tratamento_create"),
+    path("pacientes/<int:pk>/tratamentos/<int:tratamento_id>/editar/", views_clinico.tratamento_update, name="tratamento_update"),
+    path("pacientes/<int:pk>/tratamentos/<int:tratamento_id>/concluir/", views_clinico.tratamento_concluir, name="tratamento_concluir"),
+    path("pacientes/<int:pk>/tratamentos/<int:tratamento_id>/excluir/", views_clinico.tratamento_delete, name="tratamento_delete"),
 
     # Agenda
     path("agenda/", views.agendamento_list, name="agenda"),
