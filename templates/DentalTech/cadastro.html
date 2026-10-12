@@ -19,7 +19,7 @@
         <h1>Criar conta</h1>
 
         <p class="muted">
-            Cadastre um usuário para acessar o sistema odontológico.
+            Solicite acesso ao sistema odontológico. Um administrador precisa aprovar o seu cadastro antes do primeiro login.
         </p>
 
         {% if form.non_field_errors %}
@@ -32,6 +32,13 @@
 
             {% csrf_token %}
 
+            <label>
+                <span class="field-label">Nome completo</span>
+                {{ form.first_name }}
+                {% if form.first_name.errors %}
+                    <span class="field-error">{{ form.first_name.errors|striptags }}</span>
+                {% endif %}
+            </label>
             <label>
                 <span class="field-label">Usuário</span>
 
@@ -91,7 +98,7 @@
             </label>
 
             <button class="button login-button" type="submit">
-                Cadastrar
+                Solicitar acesso
             </button>
 
         </form>

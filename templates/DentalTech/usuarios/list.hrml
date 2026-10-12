@@ -1,0 +1,66 @@
+{% extends "DentalTech/base.html" %}
+
+{% block title %}Usuários | Harmoniê{% endblock %}
+{% block heading %}Usuários e acessos{% endblock %}
+
+{% block content %}
+<form class="toolbar" method="get">
+    <div class="search-field">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="search" name="q" value="{{ termo }}" placeholder="Buscar por usuário, nome ou e-mail" aria-label="Buscar usuários">
+    </div>
+    <button class="button secondary" type="submit">Buscar</button>
+</form>
+
+<div class="card table-wrap">
+    <table>
+        <thead>
+            <tr><th>Usuário</th><th>E-mail</th><th>Dentista vinculado</th><th>Situação</th><th class="actions"></th></tr>
+        </thead>
+        <tbody>
+            {% for u in pagina %}
+                <tr>
+                    <td>
+                        <div class="cell-person">
+                            <span class="avatar">{{ u.username|first|upper }}</span>
+                            <div><b>{{ u.username }}</b><small>{{ u.get_full_name|default:"—" }}</small></div>
+                        </div>
+                    </td>
+                    <td>{{ u.email|default:"—" }}</td>
+                    <td>
+                        {% if u.profissional %}{{ u.profissional.nome }}
+                        {% elif u.is_staff or u.is_superuser %}<small>Administrador</small>
+                        {% else %}<small>Nenhum</small>{% endif %}
+                    </td>
+                    <td>
+                        {% if u.is_active %}<span class="badge confirmada">Ativo</span>
+                        {% elif not u.last_login and not u.profissional %}<span class="badge em_andamento">Aguardando aprovação</span>
+                        {% else %}<span class="badge cancelada">Desativado</span>{% endif %}
+                    </td>
+                    <td class="actions">
+                        <div class="row-actions">
+                            {% if not u.is_active and not u.last_login and not u.profissional %}
+                                <a class="primary" href="{% url 'DentalTech:usuario_aprovar' u.pk %}">Aprovar</a>
+                                <form method="post" action="{% url 'DentalTech:usuario_recusar' u.pk %}"
+                                      data-confirm="Recusar e remover a solicitação de {{ u.username }}?">
+                                    {% csrf_token %}<button type="submit" class="danger">Recusar</button>
+                                </form>
+                            {% elif u.pk != request.user.pk %}
+                                <form method="post" action="{% url 'DentalTech:usuario_alternar' u.pk %}"
+                                      {% if u.is_active %}data-confirm="Desativar o acesso de {{ u.username }}?"{% endif %}>
+                                    {% csrf_token %}
+                                    <button type="submit" {% if u.is_active %}class="danger"{% endif %}>{% if u.is_active %}Desativar{% else %}Ativar{% endif %}</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5" class="empty">Nenhum usuário encontrado.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<p class="muted">Para vincular um usuário existente a um dentista, use <a class="link" href="{% url 'DentalTech:dentistas' %}">Dentistas → Editar</a>.</p>
+{% include "DentalTech/_paginacao.html" %}
+{% endblock %}

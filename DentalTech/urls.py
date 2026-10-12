@@ -50,12 +50,6 @@ urlpatterns = [
         name="configuracoes",
     ),
 
-    # Atendimentos
-    path("agenda/<int:agendamento_id>/atendimento/novo/", views.atendimento_create, name="atendimento_create"),
-    path("atendimentos/<int:pk>/", views.atendimento_detail, name="atendimento_detail"),
-    path("atendimentos/<int:pk>/editar/", views.atendimento_update, name="atendimento_update"),
-
-
     # Pacientes
     path("pacientes/<int:pk>/tratamentos/", views_clinico.tratamento_list, name="tratamentos"),
     path("pacientes/<int:pk>/tratamentos/novo/", views_clinico.tratamento_create, name="tratamento_create"),
@@ -79,8 +73,19 @@ urlpatterns = [
     path("procedimentos/novo/", views_clinico.procedimento_create, name="procedimento_create"),
     path("procedimentos/<int:pk>/editar/", views_clinico.procedimento_update, name="procedimento_update"),
 
+    # Administração
+    path("usuarios/", views_gestao.usuario_list, name="usuarios"),
+    path("usuarios/<int:pk>/aprovar/", views_gestao.usuario_aprovar, name="usuario_aprovar"),
+    path("usuarios/<int:pk>/alternar/", views_gestao.usuario_alternar, name="usuario_alternar"),
+    path("usuarios/<int:pk>/recusar/", views_gestao.usuario_recusar, name="usuario_recusar"),
+
     # Relatórios e configurações
     path("relatorios/", views_gestao.relatorios, name="relatorios"),
+
+    # Atendimentos
+        path("agenda/<int:agendamento_id>/atendimento/novo/", views.atendimento_create, name="atendimento_create"),
+        path("atendimentos/<int:pk>/", views.atendimento_detail, name="atendimento_detail"),
+        path("atendimentos/<int:pk>/editar/", views.atendimento_update, name="atendimento_update"),
 ]
 
 
