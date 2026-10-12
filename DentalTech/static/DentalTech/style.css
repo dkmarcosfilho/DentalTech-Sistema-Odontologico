@@ -1515,3 +1515,316 @@ dd {
     margin-top: 3px;
     accent-color: var(--danger);
 }
+
+
+/* ==========================================================
+   Melhorias: paginação, ações em linha, odontograma, relatórios
+   ========================================================== */
+
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin: 18px 0 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+}
+
+.pagination a {
+    color: var(--tobacco);
+    padding: 7px 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+}
+
+.pagination a:hover {
+    background: var(--sand);
+    border-color: var(--wood);
+}
+
+.pagination .disabled {
+    color: var(--taupe);
+    padding: 7px 14px;
+}
+
+.pagination-info {
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.row-actions form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.row-actions button {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 11px;
+    font: 600 12.5px 'Montserrat', sans-serif;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--tobacco);
+    cursor: pointer;
+}
+
+.row-actions button:hover {
+    background: var(--sand);
+    border-color: var(--wood);
+}
+
+.row-actions button.primary {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #fff;
+}
+
+.row-actions button.danger {
+    color: var(--danger);
+}
+
+.row-actions button.danger:hover {
+    background: var(--danger-bg);
+    border-color: var(--danger);
+}
+
+.nav-badge {
+    display: inline-block;
+    min-width: 20px;
+    padding: 1px 7px;
+    margin-left: 6px;
+    border-radius: 999px;
+    background: var(--gold);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.tab-links {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.callout {
+    padding: 16px 20px;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+}
+
+.callout p {
+    margin: 4px 0 0;
+}
+
+.warning-callout {
+    background: var(--warning-bg);
+    color: var(--warning);
+    border-left: 4px solid var(--warning);
+}
+
+.total-row {
+    border-top: 2px solid var(--line);
+    margin-top: 6px;
+}
+
+
+/* Odontograma */
+
+.denticao-switch {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+}
+
+.denticao-switch a {
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--taupe);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--tobacco);
+    background: #fff;
+}
+
+.denticao-switch a.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #fff;
+}
+
+.odonto {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+}
+
+.odonto-row {
+    display: flex;
+    justify-content: center;
+    gap: 22px;
+    min-width: max-content;
+}
+
+.odonto-quad {
+    display: flex;
+    gap: 6px;
+}
+
+.odonto-sep {
+    height: 1px;
+    background: var(--line);
+    margin: 4px 0;
+    min-width: max-content;
+}
+
+.tooth {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 42px;
+    padding: 6px 0 5px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--brown);
+    font-size: 12px;
+    transition: transform .15s, box-shadow .15s;
+}
+
+.tooth:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+    border-color: var(--wood);
+}
+
+.tooth-shape {
+    width: 22px;
+    height: 26px;
+    border-radius: 9px 9px 12px 12px;
+    background: var(--tooth, #fff);
+    border: 2px solid var(--tooth-line, var(--taupe));
+}
+
+.tooth-note {
+    position: absolute;
+    top: 3px;
+    right: 4px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--gold);
+}
+
+.st-sem_registro {
+    --tooth: #fff;
+    --tooth-line: var(--taupe);
+}
+
+.st-saudavel {
+    --tooth: #E6EFE3;
+    --tooth-line: #4A6B3F;
+}
+
+.st-carie {
+    --tooth: #F6E1D9;
+    --tooth-line: #9A4A31;
+}
+
+.st-restaurado {
+    --tooth: #E3E8EE;
+    --tooth-line: #3F5670;
+}
+
+.st-ausente,
+.st-extraido {
+    --tooth: repeating-linear-gradient(45deg, #eee, #eee 3px, #ddd 3px, #ddd 6px);
+    --tooth-line: #999;
+}
+
+.st-fraturado {
+    --tooth: #F7ECD3;
+    --tooth-line: #8A6417;
+}
+
+.st-outro {
+    --tooth: #E8DCCB;
+    --tooth-line: #71543B;
+}
+
+.odonto-legend {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    padding: 0;
+    margin: 20px 0 8px;
+    font-size: 12.5px;
+    color: var(--muted);
+}
+
+.tooth-dot {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    vertical-align: -2px;
+    margin-right: 4px;
+    background: var(--tooth, #fff);
+    border: 2px solid var(--tooth-line, var(--taupe));
+}
+
+
+/* Relatórios */
+
+.report-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 14px 0 18px;
+}
+
+.report-summary>div {
+    background: var(--off-white);
+    border-radius: var(--radius);
+    padding: 10px 16px;
+    min-width: 140px;
+}
+
+.report-summary span {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.report-summary strong {
+    font-size: 18px;
+}
+
+@media print {
+    .sidebar,
+    .mobile-bar,
+    .sidebar-backdrop,
+    .no-print,
+    .main>header .button,
+    .alert {
+        display: none !important;
+    }
+    .main {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #ccc;
+    }
+}
