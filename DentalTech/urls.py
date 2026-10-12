@@ -26,16 +26,11 @@ urlpatterns = [
 
     # Agenda
     path("agenda/", views.agendamento_list, name="agenda"),
-    path(
-        "agenda/novo/",
-        views.agendamento_create,
-        name="agendamento_create",
-    ),
-    path(
-        "agenda/<int:pk>/editar/",
-        views.agendamento_update,
-        name="agendamento_update",
-    ),
+    path("agenda/novo/", views.agendamento_create, name="agendamento_create"),
+    path("agenda/<int:pk>/editar/", views.agendamento_update, name="agendamento_update"),
+    path("agenda/<int:pk>/status/<str:novo_status>/", views.agendamento_status, name="agendamento_status"),
+    path("agenda/<int:pk>/excluir/", views.agendamento_delete, name="agendamento_delete"),
+
 
     # Dentistas
     path("dentistas/", views.dentistas, name="dentistas"),
