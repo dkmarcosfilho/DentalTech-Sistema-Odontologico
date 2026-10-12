@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, views_clinico, views_gestao
 
 app_name = "DentalTech"
 
@@ -11,18 +11,6 @@ urlpatterns = [
 
     # Dashboard
     path("", views.dashboard, name="dashboard"),
-
-    # Pacientes
-    path("pacientes/", views.paciente_list, name="pacientes"),
-    path("pacientes/novo/", views.paciente_create, name="paciente_create"),
-    path("pacientes/<int:pk>/", views.paciente_detail, name="paciente_detail"),
-    path("pacientes/<int:pk>/editar/", views.paciente_update, name="paciente_update"),
-    path("pacientes/<int:pk>/excluir/", views.paciente_delete, name="paciente_delete"),
-    path("pacientes/<int:pk>/tratamentos/", views_clinico.tratamento_list, name="tratamentos"),
-    path("pacientes/<int:pk>/tratamentos/novo/", views_clinico.tratamento_create, name="tratamento_create"),
-    path("pacientes/<int:pk>/tratamentos/<int:tratamento_id>/editar/", views_clinico.tratamento_update, name="tratamento_update"),
-    path("pacientes/<int:pk>/tratamentos/<int:tratamento_id>/concluir/", views_clinico.tratamento_concluir, name="tratamento_concluir"),
-    path("pacientes/<int:pk>/tratamentos/<int:tratamento_id>/excluir/", views_clinico.tratamento_delete, name="tratamento_delete"),
 
     # Agenda
     path("agenda/", views.agendamento_list, name="agenda"),
@@ -78,6 +66,7 @@ urlpatterns = [
     path("usuarios/<int:pk>/aprovar/", views_gestao.usuario_aprovar, name="usuario_aprovar"),
     path("usuarios/<int:pk>/alternar/", views_gestao.usuario_alternar, name="usuario_alternar"),
     path("usuarios/<int:pk>/recusar/", views_gestao.usuario_recusar, name="usuario_recusar"),
+    path("auditoria/", views_gestao.auditoria_list, name="auditoria"),
 
     # Relatórios e configurações
     path("relatorios/", views_gestao.relatorios, name="relatorios"),
