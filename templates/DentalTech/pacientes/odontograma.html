@@ -1,0 +1,62 @@
+{% extends "DentalTech/base.html" %}
+
+{% block title %}Odontograma de {{ paciente.nome }} | Harmoniê{% endblock %}
+{% block heading %}Odontograma{% endblock %}
+
+{% block header_action %}
+    <a class="button secondary" href="{% url 'DentalTech:tratamentos' paciente.pk %}">Tratamentos</a>
+{% endblock %}
+
+{% block content %}
+<div class="context card">
+    <b>{{ paciente.nome }}</b>
+    <span>Clique em um dente para registrar a condição.</span>
+    <a class="link" href="{% url 'DentalTech:paciente_detail' paciente.pk %}">← Voltar à ficha</a>
+</div>
+
+<div class="card">
+    <div class="denticao-switch">
+        <a class="{% if not decidua %}active{% endif %}" href="{% url 'DentalTech:odontograma' paciente.pk %}">Dentição permanente</a>
+        <a class="{% if decidua %}active{% endif %}" href="{% url 'DentalTech:odontograma' paciente.pk %}?denticao=decidua">Dentição decídua (leite)</a>
+    </div>
+
+    <div class="odonto">
+        {% for linha_nome, quadrantes in arcadas.items %}
+            <div class="odonto-row">
+                {% for quadrante in quadrantes %}
+                    <div class="odonto-quad">
+                        {% for dente in quadrante %}
+                            <a class="tooth st-{{ dente.status|lower }}"
+                               href="{% url 'DentalTech:dente_update' paciente.pk dente.numero %}"
+                               title="Dente {{ dente.numero }} — {{ dente.rotulo }}">
+                                <span class="tooth-shape"></span>
+                                <b>{{ dente.numero }}</b>
+                                {% if dente.obs %}<i class="tooth-note" title="Tem observações"></i>{% endif %}
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+            {% if linha_nome == "superior" %}<div class="odonto-sep"></div>{% endif %}
+        {% endfor %}
+    </div>
+
+    <ul class="odonto-legend">
+        <li><span class="tooth-dot st-sem_registro"></span> Sem registro</li>
+        {% for valor, rotulo in status_choices %}
+            <li><span class="tooth-dot st-{{ valor|lower }}"></span> {{ rotulo }}</li>
+        {% endfor %}
+    </ul>
+    <p class="muted">Notação FDI. O lado direito do paciente fica à esquerda da tela.</p>
+</div>
+
+<form method="post" class="card form-card" style="margin-top:20px; max-width:none">
+    {% csrf_token %}
+    {% for field in form %}
+        <label>{{ field.label }} {{ field }}</label>
+    {% endfor %}
+    <div class="form-actions">
+        <button type="submit" class="button secondary">Salvar observações</button>
+    </div>
+</form>
+{% endblock %}
