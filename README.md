@@ -1,4 +1,4 @@
-<img src= "logo-clinica.png" width="200" height="400">
+<img src= "harmonie-logo.png" width="200" height="400">
 
 ## Sobre
 O Sistema DentalTech é uma Plataforma Web criada para tornar a gestão da clínica odontológica mais prática, organizada e eficiente. A solução permite o gerenciamento de pacientes, agendamentos, consultas e demais informações essenciais para o funcionamento da clínica, além de oferecer uma experiência mais ágil e acessível tanto para os profissionais quanto para os pacientes.
@@ -69,6 +69,6 @@ O desenvolvimento do sistema faz parte de um projeto acadêmico do curso Técnic
 
 
 # Integrantes
-- Marcos Filho 
-- José Luís 
-- Bruno Rafael 
+- [Marcos Filho](https://github.com/dkmarcosfilho) 
+- [José Luís](https://github.com/luicorreia09) 
+- [Bruno Rafael](https://github.com/br781642-cell) 
