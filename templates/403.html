@@ -1,0 +1,12 @@
+{% extends "DentalTech/base.html" %}
+{% block title %}Acesso negado | Harmoniê{% endblock %}
+{% block heading %}Acesso negado{% endblock %}
+{% block content %}
+<div class="card form-card">
+    <h2>Você não tem permissão para ver esta página</h2>
+    <p>{{ exception|default:"Seu usuário não tem acesso a este conteúdo." }}</p>
+    <div class="form-actions">
+        <a href="{% url 'DentalTech:dashboard' %}">Voltar ao início</a>
+    </div>
+</div>
+{% endblock %}
