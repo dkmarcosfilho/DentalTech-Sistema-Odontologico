@@ -1,0 +1,22 @@
+{% extends "DentalTech/base.html" %}
+
+{% block title %}Prontuário de {{ paciente.nome }} | Harmoniê{% endblock %}
+{% block heading %}Prontuário de {{ paciente.nome }}{% endblock %}
+
+{% block content %}
+<form method="post" class="card form-card">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="errors">{{ form.non_field_errors }}</div>{% endif %}
+    {% for field in form %}
+        <label>
+            {{ field.label }}
+            {{ field }}
+            {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </label>
+    {% endfor %}
+    <div class="form-actions">
+        <a href="{% url 'DentalTech:prontuario' paciente.pk %}">Cancelar</a>
+        <button type="submit" class="button">Salvar prontuário</button>
+    </div>
+</form>
+{% endblock %}
