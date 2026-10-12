@@ -244,3 +244,34 @@ class ProcedimentoForm(forms.ModelForm):
         if duplicado.exists():
             raise forms.ValidationError("Já existe um procedimento com este nome.")
         return nome
+
+# ==========================================================
+# Relatórios
+# ==========================================================
+
+class RelatorioFiltroForm(forms.Form):
+    tipo = forms.ChoiceField(label="Relatório", choices=[])
+    data_inicial = forms.DateField(label="De", widget=DateInput())
+    data_final = forms.DateField(label="Até", widget=DateInput())
+    profissional = forms.ModelChoiceField(
+        queryset=Profissional.objects.order_by("nome"),
+        required=False,
+        label="Dentista",
+        empty_label="Todos os dentistas",
+    )
+
+    def __init__(self, *args, tipos, acesso_geral, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["tipo"].choices = tipos
+        if not acesso_geral:
+            del self.fields["profissional"]
+
+    def clean(self):
+        dados = super().clean()
+        ini, fim = dados.get("data_inicial"), dados.get("data_final")
+        if ini and fim:
+            if fim < ini:
+                raise forms.ValidationError("A data final não pode ser antes da inicial.")
+            if (fim - ini).days > 366:
+                raise forms.ValidationError("Escolha um período de até 1 ano.")
+        return dados

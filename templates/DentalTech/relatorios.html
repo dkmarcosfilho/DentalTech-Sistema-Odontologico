@@ -1,69 +1,76 @@
 {% extends "DentalTech/base.html" %}
 
 {% block title %}Relatórios | Harmoniê{% endblock %}
-
 {% block heading %}Relatórios{% endblock %}
 
 {% block content %}
-
-<p class="page-intro">Consulte informações e dados da clínica.</p>
-
-<section class="stats">
-    <div class="stat">
-        <span>Pacientes</span>
-        <strong>{{ total_pacientes }}</strong>
-    </div>
-    <div class="stat">
-        <span>Dentistas</span>
-        <strong>{{ total_dentistas }}</strong>
-    </div>
-    <div class="stat">
-        <span>Agendamentos</span>
-        <strong>{{ total_agendamentos }}</strong>
-    </div>
-    <div class="stat">
-        <span>Atendimentos</span>
-        <strong>{{ total_atendimentos }}</strong>
-    </div>
-    <div class="stat">
-        <span>Pendentes</span>
-        <strong>{{ agendamentos_pendentes }}</strong>
-    </div>
+<section class="stats no-print">
+    <div class="stat"><span>Pacientes</span><strong>{{ total_pacientes }}</strong></div>
+    <div class="stat"><span>Dentistas</span><strong>{{ total_dentistas }}</strong></div>
+    <div class="stat"><span>Agendamentos</span><strong>{{ total_agendamentos }}</strong></div>
+    <div class="stat"><span>Atendimentos</span><strong>{{ total_atendimentos }}</strong></div>
+    <div class="stat"><span>Pendentes</span><strong>{{ agendamentos_pendentes }}</strong></div>
 </section>
 
+<form class="card filters no-print" method="get">
+    <input type="hidden" name="gerar" value="1">
+    {% if form.non_field_errors %}<div class="errors" style="width:100%">{{ form.non_field_errors }}</div>{% endif %}
+    {% for field in form %}
+        <label>
+            {{ field.label }}
+            {{ field }}
+            {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </label>
+    {% endfor %}
+    <button type="submit" class="button">Gerar relatório</button>
+</form>
+
+{% if resultado %}
 <div class="card">
-    <h2>Acesso rápido</h2>
+    <div class="card-title">
+        <h2>{{ resultado.titulo }}</h2>
+        <span class="no-print">
+            <a href="?{{ request.GET.urlencode }}&amp;formato=csv">Baixar CSV</a>
+            &nbsp;·&nbsp;
+            <a href="#" data-print>Imprimir</a>
+        </span>
+    </div>
 
-    <div class="report-grid">
+    <div class="report-summary">
+        {% for rotulo, valor in resultado.resumo %}
+            <div><span>{{ rotulo }}</span><strong>{{ valor }}</strong></div>
+        {% endfor %}
+    </div>
 
-        <div class="report-card">
-            <div class="stat-icon">
-                <svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            </div>
-            <h3>Pacientes</h3>
-            <p>Visualize os pacientes cadastrados no sistema.</p>
-            <a href="{% url 'DentalTech:pacientes' %}" class="button small">Ver pacientes</a>
-        </div>
-
-        <div class="report-card">
-            <div class="stat-icon">
-                <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
-            </div>
-            <h3>Agendamentos</h3>
-            <p>Consulte os agendamentos registrados na clínica.</p>
-            <a href="{% url 'DentalTech:agenda' %}" class="button small">Ver agenda</a>
-        </div>
-
-        <div class="report-card">
-            <div class="stat-icon">
-                <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
-            </div>
-            <h3>Dentistas</h3>
-            <p>Consulte os profissionais cadastrados.</p>
-            <a href="{% url 'DentalTech:dentistas' %}" class="button small">Ver dentistas</a>
-        </div>
-
+    <div class="table-wrap">
+        <table>
+            <thead><tr>{% for c in resultado.colunas %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+            <tbody>
+                {% for linha in resultado.pagina %}
+                    <tr>{% for celula in linha %}<td>{{ celula }}</td>{% endfor %}</tr>
+                {% empty %}
+                    <tr><td colspan="{{ resultado.colunas|length }}" class="empty">Nenhum dado no período.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
+<div class="no-print">
+    {% include "DentalTech/_paginacao.html" with pagina=resultado.pagina querystring=resultado.querystring %}
+</div>
+{% endif %}
 
+<div class="card no-print">
+    <div class="card-title"><h2>Últimos relatórios gerados</h2></div>
+    {% for r in historico %}
+        <div class="list-row">
+            <div>
+                <b>{{ r.titulo }}</b>
+                <small>{{ r.criado_em|date:"d/m/Y H:i" }} · {{ r.gerado_por.username }} · {{ r.descricao }}</small>
+            </div>
+        </div>
+    {% empty %}
+        <p class="empty">Nenhum relatório gerado ainda.</p>
+    {% endfor %}
+</div>
 {% endblock %}
