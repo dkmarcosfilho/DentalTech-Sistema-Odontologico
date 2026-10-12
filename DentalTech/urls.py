@@ -106,6 +106,9 @@ urlpatterns = [
     path("procedimentos/", views_clinico.procedimento_list, name="procedimentos"),
     path("procedimentos/novo/", views_clinico.procedimento_create, name="procedimento_create"),
     path("procedimentos/<int:pk>/editar/", views_clinico.procedimento_update, name="procedimento_update"),
+
+    # Relatórios e configurações
+    path("relatorios/", views_gestao.relatorios, name="relatorios"),
 ]
 
 
