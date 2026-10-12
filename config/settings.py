@@ -8,9 +8,12 @@ https://docs.djangoproject.com/en/6.1/topics/settings/
 
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
-"""
 
+"""
+import os
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -19,14 +22,33 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-2+rb67z^pi!+pqichs^$0qjkiykq3zfiydn7z%jv_0blrnpu#9'
+def _env_bool(nome, padrao):
+    valor = os.environ.get(nome)
+    if valor is None:
+        return padrao
+    return valor.strip().lower() in {"1", "true", "yes", "on", "sim"}
+
+# Em produção defina as variáveis de ambiente (veja .env.example):
+#   DJANGO_DEBUG=False, DJANGO_SECRET_KEY=<chave longa e aleatória>,
+#   DJANGO_ALLOWED_HOSTS=meudominio.com.br
+DEBUG = _env_bool("DJANGO_DEBUG", True)
+
+# A chave abaixo só vale para desenvolvimento local (DEBUG=True).
+_CHAVE_DEV = 'django-insecure-2+rb67z^pi!+pqichs^$0qjkiykq3zfiydn7z%jv_0blrnpu#9'
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", _CHAVE_DEV)
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+if not DEBUG and SECRET_KEY == _CHAVE_DEV:
+    raise ImproperlyConfigured(
+        "Defina DJANGO_SECRET_KEY com uma chave própria quando DEBUG=False."
+    )
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",")
+    if host.strip()
+]
 
 # Application definition
 
@@ -62,6 +84,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'DentalTech.context_processors.avisos_admin',
             ],
         },
     },
@@ -76,7 +99,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+         'NAME': os.environ.get("DJANGO_DB_PATH", BASE_DIR / 'db.sqlite3'),
     }
 }
 
@@ -103,9 +126,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'pt-br'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Fortaleza'
 
 USE_I18N = True
 
@@ -130,3 +153,24 @@ MAILERS = {
 LOGIN_URL = "DentalTech:login"
 LOGIN_REDIRECT_URL = "DentalTech:dashboard"
 LOGOUT_REDIRECT_URL = "DentalTech:login"
+
+
+# ==========================================================
+# DentalTech
+# ==========================================================
+
+# Quem acessa /cadastro/ cria um usuário INATIVO: o acesso só é liberado
+# depois que um administrador aprovar (tela "Usuários").
+# Defina DENTALTECH_AUTOCADASTRO=False para desligar a página de cadastro e
+# deixar que apenas administradores criem contas.
+PERMITIR_AUTOCADASTRO = _env_bool("DENTALTECH_AUTOCADASTRO", True)
+
+# Itens por página nas listagens.
+ITENS_POR_PAGINA = 20
+
+# Endurecimento básico quando DEBUG=False (HTTPS atrás de proxy/servidor).
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = "same-origin"
