@@ -1,6 +1,8 @@
-<center>
-    <img src= "harmonie-logo.png" width="200" height="400">
-</center>
+
+<p align="center">
+  <img src="harmonie-logo.png" width="200" alt="Logo Harmonie">
+</p>
+
 ## Sobre
 O Sistema DentalTech é uma Plataforma Web criada para tornar a gestão da clínica odontológica mais prática, organizada e eficiente. A solução permite o gerenciamento de pacientes, agendamentos, consultas e demais informações essenciais para o funcionamento da clínica, além de oferecer uma experiência mais ágil e acessível tanto para os profissionais quanto para os pacientes.
 
