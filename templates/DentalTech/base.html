@@ -51,7 +51,7 @@
                 Agenda
             </a>
 
-            <a href="{% url 'DentalTech:pacientes' %}" {% if current == 'pacientes' or current == 'paciente_create' or current == 'paciente_detail' or current == 'paciente_update' %}class="active" aria-current="page"{% endif %}>
+            <a href="{% url 'DentalTech:pacientes' %}" {% if current == 'pacientes' or current == 'paciente_create' or current == 'paciente_detail' or current == 'paciente_update' or current == 'paciente_delete' or current == 'prontuario' or current == 'prontuario_update' or current == 'odontograma' or current == 'dente_update' or current|slice:':10' == 'tratamento' %}class="active" aria-current="page"{% endif %}>
                 <svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 Pacientes
             </a>
@@ -61,10 +61,27 @@
                 Dentistas
             </a>
 
+            <a href="{% url 'DentalTech:procedimentos' %}" {% if current == 'procedimentos' or current == 'procedimento_create' or current == 'procedimento_update' %}class="active" aria-current="page"{% endif %}>
+                <svg class="icon" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.4 2.4-2-2z"/></svg>
+                Procedimentos
+            </a>
+
             <a href="{% url 'DentalTech:relatorios' %}" {% if current == 'relatorios' %}class="active" aria-current="page"{% endif %}>
                 <svg class="icon" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
                 Relatórios
             </a>
+
+            {% if request.user.is_staff or request.user.is_superuser %}
+            <a href="{% url 'DentalTech:usuarios' %}" {% if current == 'usuarios' or current == 'usuario_aprovar' %}class="active" aria-current="page"{% endif %}>
+                <svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-3-3.87M4 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M17 11l2 2 4-4"/></svg>
+                Usuários{% if usuarios_pendentes %} <span class="nav-badge">{{ usuarios_pendentes }}</span>{% endif %}
+            </a>
+
+            <a href="{% url 'DentalTech:auditoria' %}" {% if current == 'auditoria' %}class="active" aria-current="page"{% endif %}>
+                <svg class="icon" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+                Auditoria
+            </a>
+            {% endif %}
 
             <a href="{% url 'DentalTech:configuracoes' %}" {% if current == 'configuracoes' %}class="active" aria-current="page"{% endif %}>
                 <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>

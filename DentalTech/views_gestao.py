@@ -14,7 +14,7 @@ from django.views.decorators.http import require_POST
 
 from . import relatorios as motor
 from .auditoria import registrar
-from .forms import RelatorioFiltroForm
+from .forms import AprovarUsuarioForm ,RelatorioFiltroForm
 from .models import (
     Agendamento,
     Atendimento,

@@ -16,9 +16,9 @@ from django.views.decorators.http import require_POST
 from .auditoria import registrar
 from .forms import (
     AgendamentoForm,
-    CadastroForm,
     AtendimentoForm,
     AtendimentoProcedimentoFormSet,
+    CadastroForm,
     PacienteForm,
     ProfissionalForm,
 )
@@ -45,83 +45,51 @@ from .utils import paginar, so_digitos
 Acao = LogAuditoria.Acao
 
 
-def get_profissional_logado(request):
-    """
-    Retorna o profissional ligado ao usuário logado.
-
-    Usuários administrativos (staff/superuser) têm acesso geral
-    e retornam None.
-    """
-    if request.user.is_staff or request.user.is_superuser:
-        return None
-
-    try:
-        return request.user.profissional
-    except Profissional.DoesNotExist:
-        raise PermissionDenied(
-            "Este usuário não está vinculado a um dentista."
-        )
-
-
-def usuario_tem_acesso_geral(request):
-    return request.user.is_staff or request.user.is_superuser
-
+# ==========================================================
+# Dashboard
+# ==========================================================
 
 @login_required
 def dashboard(request):
-    hoje = date.today()
+    # localdate() respeita America/Fortaleza (date.today() usava o relógio
+    # do servidor e errava o "hoje" à noite).
+    agora = timezone.localtime()
+    hoje = agora.date()
     profissional = get_profissional_logado(request)
 
-    proximos = Agendamento.objects.filter(
-        data__gte=hoje,
-        status__in=[
-            Agendamento.Status.AGENDADA,
-            Agendamento.Status.CONFIRMADA,
-        ],
-    ).select_related("paciente", "profissional")
+    ativos = Agendamento.STATUS_PENDENTES
+    agendamentos = agendamentos_visiveis(request)
 
-    agendamentos_hoje = Agendamento.objects.filter(data=hoje)
+    proximos = agendamentos.filter(status__in=ativos).filter(
+        Q(data__gt=hoje) | Q(data=hoje, horario__gte=agora.time())
+    )[:6]
+
+    agendamentos_hoje = agendamentos.filter(data=hoje).exclude(
+        status__in=Agendamento.STATUS_LIBERAM_HORARIO
+    ).count()
 
     atendimentos_recentes = Atendimento.objects.select_related(
-        "agendamento__paciente",
-        "profissional",
+        "agendamento__paciente", "profissional"
     )
-
     if profissional:
-        proximos = proximos.filter(
-            profissional=profissional
-        )
-
-        agendamentos_hoje = agendamentos_hoje.filter(
-            profissional=profissional
-        )
-
-        atendimentos_recentes = atendimentos_recentes.filter(
-            profissional=profissional
-        )
-
-    proximos = proximos[:6]
-    atendimentos_recentes = atendimentos_recentes[:5]
-
-    if profissional:
-        total_pacientes = Paciente.objects.filter(
-            agendamentos__profissional=profissional
-        ).distinct().count()
-    else:
-        total_pacientes = Paciente.objects.count()
+        atendimentos_recentes = atendimentos_recentes.filter(profissional=profissional)
 
     return render(
         request,
         "DentalTech/dashboard.html",
         {
-            "total_pacientes": total_pacientes,
-            "agendamentos_hoje": agendamentos_hoje.count(),
-            "atendimentos_recentes": atendimentos_recentes,
+            "total_pacientes": pacientes_visiveis(request).count(),
+            "agendamentos_hoje": agendamentos_hoje,
+            "atendimentos_recentes": atendimentos_recentes[:5],
             "proximos_agendamentos": proximos,
             "data_hoje": hoje,
         },
     )
 
+
+# ==========================================================
+# Autenticação
+# ==========================================================
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -131,74 +99,64 @@ def login_view(request):
         username = request.POST.get("username", "").strip()
         password = request.POST.get("password", "")
 
-        user = authenticate(
-            request,
-            username=username,
-            password=password,
-        )
+        user = authenticate(request, username=username, password=password)
 
         if user is not None:
             login(request, user)
 
-            next_url = (
-                request.GET.get("next")
-                or request.POST.get("next")
-            )
+            next_url = request.GET.get("next") or request.POST.get("next")
 
             if next_url and url_has_allowed_host_and_scheme(
                 next_url,
                 allowed_hosts={request.get_host()},
+                require_https=request.is_secure(),
             ):
                 return redirect(next_url)
 
             return redirect("DentalTech:dashboard")
 
-        messages.error(
-            request,
-            "Usuário ou senha inválidos.",
-        )
+        # Senha correta, mas conta ainda não aprovada: explica o motivo.
+        pendente = User.objects.filter(username=username, is_active=False).first()
+        if pendente and pendente.check_password(password):
+            messages.warning(
+                request,
+                "Seu cadastro ainda está aguardando aprovação de um administrador.",
+            )
+        else:
+            messages.error(request, "Usuário ou senha inválidos.")
 
-    return render(
-        request,
-        "DentalTech/login.html",
-    )
+    return render(request, "DentalTech/login.html")
 
 
 def cadastro_view(request):
+    if not settings.PERMITIR_AUTOCADASTRO:
+        raise Http404
+
     if request.user.is_authenticated:
         return redirect("DentalTech:dashboard")
 
-    if request.method == "POST":
-        form = CadastroForm(request.POST)
+    form = CadastroForm(request.POST or None)
 
-        if form.is_valid():
-            user = form.save()
+    if form.is_valid():
+        user = form.save()
+        registrar(
+            request, Acao.CRIOU, user, modelo="Usuário",
+            usuario_nome=user.username,
+            detalhes="Solicitação de acesso (aguardando aprovação)",
+        )
+        messages.success(
+            request,
+            f"Cadastro de {user.username} recebido! Um administrador precisa "
+            "aprovar o seu acesso antes do primeiro login.",
+        )
+        return redirect("DentalTech:login")
 
-            messages.success(
-                request,
-                f"Usuário {user.username} criado com sucesso! "
-                "Faça login para acessar o DentalTech.",
-            )
-
-            return redirect("DentalTech:login")
-    else:
-        form = CadastroForm()
-
-    return render(
-        request,
-        "DentalTech/cadastro.html",
-        {"form": form},
-    )
+    return render(request, "DentalTech/cadastro.html", {"form": form})
 
 
 def logout_view(request):
     logout(request)
-
-    messages.success(
-        request,
-        "Você saiu do DentalTech.",
-    )
-
+    messages.success(request, "Você saiu do DentalTech.")
     return redirect("DentalTech:login")
 
 
@@ -381,6 +339,7 @@ def paciente_delete(request, pk):
             "cancel_pk": paciente.pk,
         },
     )
+
 
 # ==========================================================
 # Agenda
@@ -618,85 +577,6 @@ def agendamento_delete(request, pk):
     messages.success(request, "Agendamento excluído.")
     return redirect(_destino(request))
 
-# RELATORIOS
-
-@login_required
-def relatorios(request):
-    profissional = get_profissional_logado(
-        request
-    )
-
-    if profissional:
-        relatorios = Relatorio.objects.filter(
-            gerado_por=request.user
-        ).select_related("gerado_por")
-
-        total_pacientes = Paciente.objects.filter(
-            agendamentos__profissional=profissional
-        ).distinct().count()
-
-        total_dentistas = 1
-
-        total_agendamentos = Agendamento.objects.filter(
-            profissional=profissional
-        ).count()
-
-        total_atendimentos = Atendimento.objects.filter(
-            profissional=profissional
-        ).count()
-
-        agendamentos_pendentes = Agendamento.objects.filter(
-            profissional=profissional,
-            status__in=[
-                Agendamento.Status.AGENDADA,
-                Agendamento.Status.CONFIRMADA,
-            ],
-        ).count()
-
-    else:
-        relatorios = Relatorio.objects.select_related(
-            "gerado_por"
-        ).all()
-
-        total_pacientes = Paciente.objects.count()
-        total_dentistas = Profissional.objects.count()
-        total_agendamentos = Agendamento.objects.count()
-        total_atendimentos = Atendimento.objects.count()
-
-        agendamentos_pendentes = Agendamento.objects.filter(
-            status__in=[
-                Agendamento.Status.AGENDADA,
-                Agendamento.Status.CONFIRMADA,
-            ],
-        ).count()
-
-    contexto = {
-        "relatorios": relatorios,
-        "total_pacientes": total_pacientes,
-        "total_dentistas": total_dentistas,
-        "total_agendamentos": total_agendamentos,
-        "total_atendimentos": total_atendimentos,
-        "agendamentos_pendentes": agendamentos_pendentes,
-    }
-
-    return render(
-        request,
-        "DentalTech/relatorios.html",
-        contexto,
-    )
-
-
-@login_required
-def configuracoes(request):
-    return render(
-        request,
-        "DentalTech/configuracoes.html",
-        {
-            "usuario": request.user,
-            "dentistas": Profissional.objects.count(),
-        },
-    )
-
 
 # ==========================================================
 # Dentistas
@@ -820,6 +700,22 @@ def dentista_delete(request, pk):
             "descricao": descricao,
             "impactos": impactos,
             "cancel_url": "DentalTech:dentistas",
+        },
+    )
+
+
+# ==========================================================
+# Configurações
+# ==========================================================
+
+@login_required
+def configuracoes(request):
+    return render(
+        request,
+        "DentalTech/configuracoes.html",
+        {
+            "usuario": request.user,
+            "dentistas": Profissional.objects.count(),
         },
     )
 
