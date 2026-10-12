@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST
 from .auditoria import registrar
 from .forms import (
     ProcedimentoForm,
+    TratamentoForm,
 )
 from .models import (
     DENTES_DECIDUOS,
@@ -26,6 +27,122 @@ from .permissoes import admin_required, get_paciente_ou_404, usuario_tem_acesso_
 from .utils import paginar
 
 Acao = LogAuditoria.Acao
+
+
+# ==========================================================
+# Tratamentos
+# ==========================================================
+
+def _tratamentos_do_paciente(paciente):
+    return Tratamento.objects.filter(
+        odontograma__paciente=paciente
+    ).select_related("dente")
+
+
+@login_required
+def tratamento_list(request, pk):
+    paciente = get_paciente_ou_404(request, pk)
+    situacao = request.GET.get("situacao", "")
+    tratamentos = _tratamentos_do_paciente(paciente)
+
+    if situacao == "andamento":
+        tratamentos = tratamentos.filter(concluido=False)
+    elif situacao == "concluidos":
+        tratamentos = tratamentos.filter(concluido=True)
+    else:
+        situacao = ""
+
+    pagina, querystring = paginar(request, tratamentos)
+    registrar(request, Acao.VISUALIZOU, paciente, modelo="Tratamento",
+              detalhes="Lista de tratamentos")
+
+    return render(
+        request,
+        "DentalTech/tratamentos/list.html",
+        {"paciente": paciente, "pagina": pagina,
+         "querystring": querystring, "situacao": situacao},
+    )
+
+
+@login_required
+def tratamento_create(request, pk):
+    paciente = get_paciente_ou_404(request, pk)
+    form = TratamentoForm(request.POST or None, paciente=paciente,
+                          initial={"data_inicio": timezone.localdate()})
+
+    if form.is_valid():
+        tratamento = form.save()
+        registrar(request, Acao.CRIOU, tratamento)
+        messages.success(request, "Tratamento cadastrado.")
+        return redirect("DentalTech:tratamentos", pk=paciente.pk)
+
+    return render(
+        request,
+        "DentalTech/tratamentos/form.html",
+        {"form": form, "paciente": paciente, "titulo": "Novo tratamento"},
+    )
+
+
+@login_required
+def tratamento_update(request, pk, tratamento_id):
+    paciente = get_paciente_ou_404(request, pk)
+    tratamento = get_object_or_404(_tratamentos_do_paciente(paciente), pk=tratamento_id)
+    form = TratamentoForm(request.POST or None, instance=tratamento, paciente=paciente)
+
+    if form.is_valid():
+        campos = list(form.changed_data)
+        form.save()
+        registrar(request, Acao.ALTEROU, tratamento, campos=campos)
+        messages.success(request, "Tratamento atualizado.")
+        return redirect("DentalTech:tratamentos", pk=paciente.pk)
+
+    return render(
+        request,
+        "DentalTech/tratamentos/form.html",
+        {"form": form, "paciente": paciente, "titulo": "Editar tratamento"},
+    )
+
+
+@login_required
+@require_POST
+def tratamento_concluir(request, pk, tratamento_id):
+    paciente = get_paciente_ou_404(request, pk)
+    tratamento = get_object_or_404(_tratamentos_do_paciente(paciente), pk=tratamento_id)
+
+    if not tratamento.concluido:
+        tratamento.concluido = True
+        tratamento.data_conclusao = tratamento.data_conclusao or timezone.localdate()
+        tratamento.save(update_fields=["concluido", "data_conclusao"])
+        registrar(request, Acao.ALTEROU, tratamento, campos=["concluido"])
+        messages.success(request, "Tratamento concluído.")
+
+    return redirect("DentalTech:tratamentos", pk=paciente.pk)
+
+
+@login_required
+def tratamento_delete(request, pk, tratamento_id):
+    paciente = get_paciente_ou_404(request, pk)
+    tratamento = get_object_or_404(_tratamentos_do_paciente(paciente), pk=tratamento_id)
+
+    if request.method == "POST":
+        registrar(request, Acao.EXCLUIU, tratamento)
+        tratamento.delete()
+        messages.success(request, "Tratamento excluído.")
+        return redirect("DentalTech:tratamentos", pk=paciente.pk)
+
+    return render(
+        request,
+        "DentalTech/confirm_delete.html",
+        {
+            "titulo": "Excluir tratamento",
+            "objeto": tratamento.nome,
+            "descricao": f"O tratamento de {paciente.nome} será removido do histórico.",
+            "impactos": [],
+            "cancel_url": "DentalTech:tratamentos",
+            "cancel_pk": paciente.pk,
+        },
+    )
+
 
 
 # ==========================================================

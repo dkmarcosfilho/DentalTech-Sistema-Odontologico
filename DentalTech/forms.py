@@ -162,6 +162,64 @@ class CadastroForm(UserCreationForm):
         fields = ("username", "email", "password1", "password2")
 
 
+class _DentePorNumeroMixin:
+    """Escolhe o dente pelo número (FDI); o registro é criado sob demanda."""
+
+    def _configurar_dente(self, paciente):
+        self.paciente = paciente
+        self.fields["dente_numero"] = forms.ChoiceField(
+            choices=CHOICES_DENTES, required=False, label="Dente",
+        )
+        dente = getattr(self.instance, "dente", None) if self.instance.pk else None
+        if dente:
+            self.initial["dente_numero"] = str(dente.numero)
+
+    def _dente(self):
+        numero = self.cleaned_data.get("dente_numero")
+        if not numero:
+            return None
+        return self.paciente.obter_dente(int(numero))
+
+
+class TratamentoForm(_DentePorNumeroMixin, forms.ModelForm):
+    class Meta:
+        model = Tratamento
+        fields = [
+            "nome", "diagnostico", "descricao",
+            "data_inicio", "data_conclusao", "concluido",
+        ]
+        widgets = {
+            "diagnostico": forms.Textarea(attrs={"rows": 3}),
+            "descricao": forms.Textarea(attrs={"rows": 3}),
+            "data_inicio": DateInput(),
+            "data_conclusao": DateInput(),
+        }
+
+    def __init__(self, *args, paciente, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._configurar_dente(paciente)
+        self.order_fields(["nome", "dente_numero"])
+
+    def clean(self):
+        dados = super().clean()
+        inicio = dados.get("data_inicio")
+        fim = dados.get("data_conclusao")
+
+        if inicio and fim and fim < inicio:
+            self.add_error("data_conclusao", "A conclusão não pode ser antes do início.")
+        if dados.get("concluido") and not fim:
+            dados["data_conclusao"] = timezone.localdate()
+        return dados
+
+    def save(self, commit=True):
+        tratamento = super().save(commit=False)
+        tratamento.odontograma, _ = Odontograma.objects.get_or_create(paciente=self.paciente)
+        tratamento.dente = self._dente()
+        if commit:
+            tratamento.save()
+        return tratamento
+
+
 class ProcedimentoForm(forms.ModelForm):
     class Meta:
         model = Procedimento

@@ -1,0 +1,65 @@
+{% extends "DentalTech/base.html" %}
+
+{% block title %}Tratamentos de {{ paciente.nome }} | Harmoniê{% endblock %}
+{% block heading %}Tratamentos{% endblock %}
+
+{% block header_action %}
+    <a class="button" href="{% url 'DentalTech:tratamento_create' paciente.pk %}">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Novo tratamento
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="context card">
+    <b>{{ paciente.nome }}</b>
+    <a class="link" href="{% url 'DentalTech:paciente_detail' paciente.pk %}">← Voltar à ficha</a>
+</div>
+
+<form class="card filters" method="get">
+    <label>
+        Situação
+        <select name="situacao">
+            <option value="">Todos</option>
+            <option value="andamento" {% if situacao == "andamento" %}selected{% endif %}>Em andamento</option>
+            <option value="concluidos" {% if situacao == "concluidos" %}selected{% endif %}>Concluídos</option>
+        </select>
+    </label>
+    <button type="submit" class="button secondary">Filtrar</button>
+</form>
+
+<div class="card table-wrap">
+    <table>
+        <thead>
+            <tr><th>Tratamento</th><th>Dente</th><th>Início</th><th>Situação</th><th class="actions"></th></tr>
+        </thead>
+        <tbody>
+            {% for t in pagina %}
+                <tr>
+                    <td><b>{{ t.nome }}</b>{% if t.diagnostico %}<small>{{ t.diagnostico|truncatechars:70 }}</small>{% endif %}</td>
+                    <td>{{ t.dente.numero|default:"—" }}</td>
+                    <td>{{ t.data_inicio|date:"d/m/Y"|default:"—" }}</td>
+                    <td>
+                        {% if t.concluido %}<span class="badge concluido">Concluído{% if t.data_conclusao %} em {{ t.data_conclusao|date:"d/m/Y" }}{% endif %}</span>
+                        {% else %}<span class="badge em_andamento">Em andamento</span>{% endif %}
+                    </td>
+                    <td class="actions">
+                        <div class="row-actions">
+                            <a href="{% url 'DentalTech:tratamento_update' paciente.pk t.pk %}">Editar</a>
+                            {% if not t.concluido %}
+                                <form method="post" action="{% url 'DentalTech:tratamento_concluir' paciente.pk t.pk %}">
+                                    {% csrf_token %}<button type="submit" class="primary">Concluir</button>
+                                </form>
+                            {% endif %}
+                            <a class="danger" href="{% url 'DentalTech:tratamento_delete' paciente.pk t.pk %}">Excluir</a>
+                        </div>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5" class="empty">Nenhum tratamento cadastrado.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include "DentalTech/_paginacao.html" %}
+{% endblock %}
