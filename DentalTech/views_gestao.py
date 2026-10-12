@@ -30,6 +30,118 @@ Acao = LogAuditoria.Acao
 
 
 # ==========================================================
+# Usuários: aprovação e vínculo com dentistas
+# ==========================================================
+
+@admin_required
+def usuario_list(request):
+    termo = request.GET.get("q", "").strip()
+    usuarios = User.objects.select_related("profissional")
+
+    if termo:
+        usuarios = usuarios.filter(
+            Q(username__icontains=termo)
+            | Q(first_name__icontains=termo)
+            | Q(email__icontains=termo)
+        )
+
+    # Pendentes primeiro (inativos que nunca entraram).
+    usuarios = usuarios.order_by("is_active", "username")
+    pagina, querystring = paginar(request, usuarios)
+
+    return render(
+        request,
+        "DentalTech/usuarios/list.html",
+        {"pagina": pagina, "querystring": querystring, "termo": termo},
+    )
+
+
+@admin_required
+def usuario_aprovar(request, pk):
+    usuario = get_object_or_404(User, pk=pk)
+    form = AprovarUsuarioForm(request.POST or None)
+
+    if form.is_valid():
+        profissional = form.cleaned_data["profissional"]
+
+        with transaction.atomic():
+            if not profissional and form.cleaned_data["novo_nome"]:
+                profissional = Profissional.objects.create(
+                    nome=form.cleaned_data["novo_nome"].strip(),
+                    cro=form.cleaned_data["novo_cro"].strip(),
+                    email=usuario.email or None,
+                )
+            if profissional:
+                profissional.usuario = usuario
+                profissional.save(update_fields=["usuario"])
+
+            usuario.is_active = True
+            usuario.save(update_fields=["is_active"])
+
+        registrar(
+            request, Acao.ALTEROU, usuario, modelo="Usuário",
+            campos=["is_active"],
+            detalhes="Acesso aprovado" + (
+                f"; vinculado ao dentista {profissional.nome}" if profissional else ""
+            ),
+        )
+        if profissional:
+            messages.success(request, f"Acesso de {usuario.username} aprovado como dentista {profissional.nome}.")
+        else:
+            messages.warning(
+                request,
+                f"{usuario.username} foi ativado, mas ainda não está vinculado a "
+                "um dentista e não verá dados até que isso seja feito.",
+            )
+        return redirect("DentalTech:usuarios")
+
+    return render(
+        request,
+        "DentalTech/usuarios/aprovar.html",
+        {"form": form, "alvo": usuario},
+    )
+
+
+@admin_required
+@require_POST
+def usuario_alternar(request, pk):
+    usuario = get_object_or_404(User, pk=pk)
+
+    if usuario == request.user:
+        messages.error(request, "Você não pode desativar a própria conta.")
+        return redirect("DentalTech:usuarios")
+
+    usuario.is_active = not usuario.is_active
+    usuario.save(update_fields=["is_active"])
+    registrar(
+        request, Acao.ALTEROU, usuario, modelo="Usuário", campos=["is_active"],
+        detalhes="Conta ativada" if usuario.is_active else "Conta desativada",
+    )
+    messages.success(
+        request,
+        f"Conta de {usuario.username} {'ativada' if usuario.is_active else 'desativada'}.",
+    )
+    return redirect("DentalTech:usuarios")
+
+
+@admin_required
+@require_POST
+def usuario_recusar(request, pk):
+    """Remove uma solicitação de acesso que nunca foi usada."""
+    usuario = get_object_or_404(
+        User, pk=pk, is_active=False, last_login__isnull=True,
+        profissional__isnull=True,
+    )
+    registrar(request, Acao.EXCLUIU, usuario, modelo="Usuário",
+              detalhes="Solicitação de acesso recusada")
+    nome = usuario.username
+    usuario.delete()
+    messages.success(request, f"Solicitação de {nome} recusada.")
+    return redirect("DentalTech:usuarios")
+
+
+
+# ==========================================================
 # Relatórios
 # ==========================================================
 

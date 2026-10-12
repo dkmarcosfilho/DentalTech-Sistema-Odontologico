@@ -164,6 +164,66 @@ class ProfissionalForm(forms.ModelForm):
         campo.queryset = User.objects.filter(is_active=True).filter(livres).order_by("username")
         campo.label_from_instance = _usuario_label
 
+class CadastroForm(UserCreationForm):
+    first_name = forms.CharField(max_length=150, label="Nome completo")
+    email = forms.EmailField(required=True, label="E-mail")
+
+    class Meta:
+        model = User
+        fields = ("username", "first_name", "email", "password1", "password2")
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip()
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("Já existe uma conta com este e-mail.")
+        return email
+
+    def save(self, commit=True):
+        usuario = super().save(commit=False)
+        usuario.email = self.cleaned_data["email"]
+        usuario.first_name = self.cleaned_data["first_name"]
+        # Só entra depois que um administrador aprovar.
+        usuario.is_active = False
+        if commit:
+            usuario.save()
+        return usuario
+
+
+class AprovarUsuarioForm(forms.Form):
+    profissional = forms.ModelChoiceField(
+        queryset=Profissional.objects.none(),
+        required=False,
+        label="Vincular a um dentista já cadastrado",
+    )
+    novo_nome = forms.CharField(max_length=150, required=False, label="Ou cadastrar novo dentista: nome")
+    novo_cro = forms.CharField(max_length=20, required=False, label="CRO do novo dentista")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["profissional"].queryset = Profissional.objects.filter(
+            usuario__isnull=True
+        ).order_by("nome")
+
+    def clean(self):
+        dados = super().clean()
+        nome = (dados.get("novo_nome") or "").strip()
+        cro = (dados.get("novo_cro") or "").strip()
+
+        if dados.get("profissional") and (nome or cro):
+            raise forms.ValidationError(
+                "Escolha um dentista existente OU cadastre um novo, não os dois."
+            )
+        if bool(nome) != bool(cro):
+            self.add_error(
+                "novo_cro" if nome else "novo_nome",
+                "Informe nome e CRO para cadastrar um novo dentista.",
+            )
+        if cro and Profissional.objects.filter(cro__iexact=cro).exists():
+            self.add_error("novo_cro", "Já existe um dentista com este CRO.")
+        return dados
+
+
+
 
 # ==========================================================
 # Agenda
