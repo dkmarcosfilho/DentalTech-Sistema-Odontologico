@@ -8,7 +8,9 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .auditoria import registrar
+from .anamnese_perguntas import montar_resumo
 from .forms import (
+    AnamneseForm,
     ProcedimentoForm,
     TratamentoForm,
     ProntuarioForm,
@@ -16,8 +18,10 @@ from .forms import (
     DenteForm
 )
 from .models import (
+
     DENTES_DECIDUOS,
     DENTES_PERMANENTES,
+    Anamnese,
     AtendimentoProcedimento,
     Dente,
     LogAuditoria,
@@ -72,6 +76,53 @@ def prontuario_update(request, pk):
         request,
         "DentalTech/pacientes/prontuario_form.html",
         {"form": form, "paciente": paciente},
+    )
+
+# ==========================================================
+# Anamnese
+# ==========================================================
+
+def _anamnese_do(paciente):
+    """Cada paciente tem a sua; se por algum motivo faltar, cria em branco."""
+    anamnese, _ = Anamnese.objects.get_or_create(paciente=paciente)
+    return anamnese
+
+
+@login_required
+def anamnese_detail(request, pk):
+    paciente = get_paciente_ou_404(request, pk)
+    anamnese = _anamnese_do(paciente)
+    registrar(request, Acao.VISUALIZOU, anamnese, paciente=paciente)
+
+    return render(
+        request,
+        "DentalTech/pacientes/anamnese.html",
+        {
+            "paciente": paciente,
+            "anamnese": anamnese,
+            "resumo": montar_resumo(anamnese.respostas),
+        },
+    )
+
+
+@login_required
+def anamnese_update(request, pk):
+    paciente = get_paciente_ou_404(request, pk)
+    anamnese = _anamnese_do(paciente)
+    form = AnamneseForm(request.POST or None, anamnese=anamnese)
+
+    if request.method == "POST" and form.is_valid():
+        campos = list(form.changed_data)
+        form.salvar()
+        registrar(request, Acao.ALTEROU, anamnese,
+                  paciente=paciente, campos=campos)
+        messages.success(request, "Anamnese salva.")
+        return redirect("DentalTech:anamnese", pk=paciente.pk)
+
+    return render(
+        request,
+        "DentalTech/pacientes/anamnese_form.html",
+        {"form": form, "paciente": paciente, "secoes": form.secoes()},
     )
 
 # ==========================================================

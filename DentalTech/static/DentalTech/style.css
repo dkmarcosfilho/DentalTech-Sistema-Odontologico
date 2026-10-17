@@ -1828,3 +1828,155 @@ dd {
         border: 1px solid #ccc;
     }
 }
+
+
+/* ==========================================================
+   Anamnese
+   ========================================================== */
+
+.anamnese-intro {
+    margin: 0 0 18px;
+    max-width: 780px;
+}
+
+.anamnese-form {
+    max-width: 860px;
+}
+
+.anamnese-secao {
+    margin-bottom: 18px;
+}
+
+.anamnese-secao h2 {
+    margin-bottom: 6px;
+}
+
+.pergunta {
+    padding: 14px 0;
+    border-top: 1px solid var(--line);
+}
+
+.pergunta:first-of-type {
+    border-top: 0;
+}
+
+.pergunta-texto {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--brown);
+    margin-bottom: 10px;
+}
+
+.pergunta-texto small {
+    display: block;
+    font-weight: 500;
+    margin-top: 2px;
+}
+
+.pergunta-detalhe {
+    margin-top: 10px;
+}
+
+.pergunta textarea {
+    width: 100%;
+}
+
+.opcoes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.opcoes .opcao {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    padding: 8px 14px;
+    font-weight: 500;
+    font-size: 13.5px;
+    color: var(--brown);
+    background: var(--off-white);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background .15s var(--ease), border-color .15s var(--ease);
+}
+
+.opcoes .opcao:hover {
+    border-color: var(--wood);
+}
+
+.opcoes .opcao:has(input:checked) {
+    background: var(--info-bg);
+    border-color: var(--gold);
+    font-weight: 600;
+}
+
+.opcoes .opcao:has(input:focus-visible) {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+}
+
+.opcoes.horas .opcao {
+    padding: 6px 12px;
+    min-width: 46px;
+    justify-content: center;
+}
+
+.opcoes .limpar {
+    margin-left: 4px;
+    padding: 4px 8px;
+    background: none;
+    border: 0;
+    color: var(--muted);
+    font: inherit;
+    font-size: 12.5px;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.anamnese-actions {
+    position: sticky;
+    bottom: 0;
+    padding: 16px 0;
+    background: var(--bg);
+}
+
+.respostas dt {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.respostas dd {
+    margin: 2px 0 0;
+    font-weight: 600;
+    color: var(--brown);
+}
+
+.resp {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 700;
+    background: var(--warm-gray);
+    color: var(--tobacco);
+}
+
+.resp-S {
+    background: var(--warning-bg);
+    color: var(--warning);
+}
+
+.resp-NS {
+    background: var(--info-bg);
+    color: var(--info);
+}
+
+.resp-detalhe {
+    display: block;
+    margin-top: 4px;
+    font-weight: 500;
+}

@@ -1,0 +1,49 @@
+{% extends "DentalTech/base.html" %}
+
+{% block title %}Anamnese de {{ paciente.nome }} | Harmoniê{% endblock %}
+{% block heading %}Anamnese{% endblock %}
+
+{% block header_action %}
+    <a class="button" href="{% url 'DentalTech:anamnese_update' paciente.pk %}">
+        {% if anamnese.preenchida %}Editar anamnese{% else %}Preencher anamnese{% endif %}
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="context card">
+    <b>{{ paciente.nome }}</b>
+    <span>{{ paciente.idade }} anos</span>
+    <span>{{ resumo.respondidas }} de {{ resumo.total }} itens respondidos</span>
+    <a class="link" href="{% url 'DentalTech:paciente_detail' paciente.pk %}">← Voltar à ficha</a>
+</div>
+
+{% if not anamnese.preenchida %}
+    <div class="card"><p class="empty">A anamnese deste paciente ainda não foi preenchida.</p></div>
+{% else %}
+    <div class="grid-two anamnese-leitura">
+        {% for bloco in resumo.secoes %}
+            <section class="card">
+                <h2>{{ bloco.secao.titulo }}</h2>
+                <dl class="respostas">
+                    {% for linha in bloco.linhas %}
+                        <dt>{{ linha.item.texto }}</dt>
+                        <dd>
+                            {% if linha.respondida %}
+                                {% if linha.item.tipo == "escolha" %}
+                                    <span class="resp resp-{{ linha.valor }}">{{ linha.texto }}</span>
+                                {% else %}
+                                    {{ linha.texto|linebreaksbr }}
+                                {% endif %}
+                            {% else %}
+                                <span class="muted">—</span>
+                            {% endif %}
+                            {% if linha.detalhe %}<span class="resp-detalhe">{{ linha.detalhe }}</span>{% endif %}
+                        </dd>
+                    {% endfor %}
+                </dl>
+            </section>
+        {% endfor %}
+    </div>
+    <p class="muted">Atualizada em {{ anamnese.atualizado_em|date:"d/m/Y H:i" }}</p>
+{% endif %}
+{% endblock %}

@@ -20,7 +20,9 @@ urlpatterns = [
     path("pacientes/<int:pk>/editar/", views.paciente_update, name="paciente_update"),
     path("pacientes/<int:pk>/excluir/", views.paciente_delete, name="paciente_delete"),
 
-    # Prontuário, odontograma, dentes e tratamentos
+    # Prontuário, odontograma, dentes, anamnese e tratamentos
+    path("pacientes/<int:pk>/anamnese/", views_clinico.anamnese_detail, name="anamnese"),
+    path("pacientes/<int:pk>/anamnese/editar/", views_clinico.anamnese_update, name="anamnese_update"),
     path("pacientes/<int:pk>/prontuario/", views_clinico.prontuario_detail, name="prontuario"),
     path("pacientes/<int:pk>/prontuario/editar/", views_clinico.prontuario_update, name="prontuario_update"),
     path("pacientes/<int:pk>/odontograma/", views_clinico.odontograma_detail, name="odontograma"),

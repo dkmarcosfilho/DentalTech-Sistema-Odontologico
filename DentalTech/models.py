@@ -222,6 +222,33 @@ class Prontuario(models.Model):
         return f"Prontuário de {self.paciente.nome}"
 
 
+class Anamnese(models.Model):
+    """
+    Anamnese do paciente (questionário de saúde, páginas 9 e 10 da ficha
+    da clínica). Cada paciente tem a sua, criada junto com o cadastro.
+
+    As respostas ficam em `respostas`, por código de pergunta (veja
+    anamnese_perguntas.py). Pergunta sem resposta simplesmente não aparece.
+    """
+    paciente = models.OneToOneField(
+        Paciente,
+        on_delete=models.CASCADE,
+        related_name="anamnese"
+    )
+    respostas = models.JSONField(default=dict, blank=True)
+    # Vira True na primeira vez que o formulário é salvo.
+    preenchida = models.BooleanField(default=False)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Anamnese"
+        verbose_name_plural = "Anamneses"
+
+    def __str__(self):
+        return f"Anamnese de {self.paciente.nome}"
+
+
 class Odontograma(models.Model):
     paciente = models.OneToOneField(
         Paciente,
