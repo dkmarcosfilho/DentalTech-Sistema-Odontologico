@@ -51,7 +51,7 @@
                 Agenda
             </a>
 
-            <a href="{% url 'DentalTech:pacientes' %}" {% if current == 'pacientes' or current == 'paciente_create' or current == 'paciente_detail' or current == 'paciente_update' or current == 'paciente_delete' or current == 'prontuario' or current == 'prontuario_update' or current == 'odontograma' or current == 'dente_update' or current|slice:':10' == 'tratamento' %}class="active" aria-current="page"{% endif %}>
+            <a href="{% url 'DentalTech:pacientes' %}" {% if current == 'pacientes' or current == 'paciente_create' or current == 'paciente_detail' or current == 'paciente_update' or current == 'paciente_delete' or current == 'prontuario' or current == 'prontuario_update' or current == 'anamnese' or current == 'anamnese_update'  or current == 'odontograma' or current == 'dente_update' or current|slice:':10' == 'tratamento' %}class="active" aria-current="page"{% endif %}>
                 <svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 Pacientes
             </a>

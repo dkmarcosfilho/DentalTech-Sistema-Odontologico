@@ -1,0 +1,61 @@
+{% extends "DentalTech/base.html" %}
+
+{% block title %}Anamnese de {{ paciente.nome }} | Harmoniê{% endblock %}
+{% block heading %}Anamnese{% endblock %}
+
+{% block content %}
+<div class="context card">
+    <b>{{ paciente.nome }}</b>
+    <span>{{ paciente.idade }} anos</span>
+    <a class="link" href="{% url 'DentalTech:anamnese' paciente.pk %}">← Voltar à anamnese</a>
+</div>
+
+<p class="muted anamnese-intro">
+    Marque as respostas do paciente. Nenhuma pergunta é obrigatória: você pode
+    salvar agora e completar depois. Para desfazer uma marcação, use "limpar".
+</p>
+
+<form method="post" class="anamnese-form">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="errors">{{ form.non_field_errors }}</div>{% endif %}
+
+    {% for bloco in secoes %}
+        <section class="card anamnese-secao">
+            <h2>{{ bloco.secao.titulo }}</h2>
+
+            {% for linha in bloco.linhas %}
+                <div class="pergunta">
+                    <div class="pergunta-texto" id="p-{{ linha.campo.html_name }}">
+                        {{ linha.item.texto }}
+                        {% if linha.item.nota %}<small class="muted">{{ linha.item.nota }}</small>{% endif %}
+                    </div>
+
+                    {% if linha.texto %}
+                        {{ linha.campo }}
+                    {% else %}
+                        <div class="opcoes{% if linha.item.opcoes|length > 6 %} horas{% endif %}" role="group" aria-labelledby="p-{{ linha.campo.html_name }}">
+                            {% for opcao in linha.campo %}
+                                <label class="opcao">{{ opcao.tag }} <span>{{ opcao.choice_label }}</span></label>
+                            {% endfor %}
+                            {% if not linha.multipla %}
+                                <button type="button" class="limpar" data-limpar="{{ linha.campo.html_name }}">limpar</button>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    {% if linha.detalhe %}
+                        <div class="pergunta-detalhe">{{ linha.detalhe }}</div>
+                    {% endif %}
+
+                    {% for error in linha.campo.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                </div>
+            {% endfor %}
+        </section>
+    {% endfor %}
+
+    <div class="form-actions anamnese-actions">
+        <a href="{% url 'DentalTech:anamnese' paciente.pk %}">Cancelar</a>
+        <button type="submit" class="button">Salvar anamnese</button>
+    </div>
+</form>
+{% endblock %}

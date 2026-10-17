@@ -3,6 +3,7 @@ import logging
 
 from .models import (
     Agendamento,
+    Anamnese,
     Atendimento,
     Dente,
     LogAuditoria,
@@ -19,7 +20,7 @@ def _paciente_de(objeto):
     """Descobre a qual paciente um registro pertence (para filtrar o log)."""
     if isinstance(objeto, Paciente):
         return objeto
-    if isinstance(objeto, (Agendamento, Prontuario, Odontograma)):
+    if isinstance(objeto, (Agendamento, Anamnese, Prontuario, Odontograma)):
         return objeto.paciente
     if isinstance(objeto, Atendimento):
         return objeto.agendamento.paciente

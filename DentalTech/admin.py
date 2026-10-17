@@ -2,6 +2,7 @@ from django.contrib import admin
 
 from .models import (
     Agendamento,
+    Anamnese,
     Atendimento,
     AtendimentoProcedimento,
     Dente,
@@ -64,3 +65,4 @@ admin.site.register(Tratamento)
 admin.site.register(Atendimento)
 admin.site.register(AtendimentoProcedimento)
 admin.site.register(Relatorio)
+admin.site.register(Anamnese)

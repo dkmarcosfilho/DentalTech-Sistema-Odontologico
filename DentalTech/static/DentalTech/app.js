@@ -88,6 +88,16 @@
         input.addEventListener("input", function() { input.value = fn(input.value); });
     });
 
+    // Anamnese: "limpar" desmarca as bolinhas de uma pergunta
+    document.querySelectorAll("[data-limpar]").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+            document.querySelectorAll("input[name='" + btn.dataset.limpar + "']").forEach(function(r) {
+                r.checked = false;
+            });
+        });
+    });
+
+
     // Evita duplo envio de formulários
     document.querySelectorAll("form[method='post']").forEach(function(form) {
         form.addEventListener("submit", function() {

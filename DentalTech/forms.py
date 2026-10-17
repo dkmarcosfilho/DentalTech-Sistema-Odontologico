@@ -7,10 +7,19 @@ from django.forms import inlineformset_factory
 from django.db.models import Q
 from django.utils import timezone
 
+
+from .anamnese_perguntas import (
+    MULTIPLA,
+    SECOES,
+    TEXTO,
+    TODOS_OS_ITENS,
+)
+
 from .models import (
     DENTES_DECIDUOS,
     DENTES_PERMANENTES,
     Agendamento,
+    Anamnese,
     Atendimento,
     AtendimentoProcedimento,
     Odontograma,
@@ -121,6 +130,85 @@ class PacienteForm(forms.ModelForm):
         if data > timezone.localdate():
             raise forms.ValidationError("A data de nascimento não pode ser no futuro.")
         return data
+
+# ==========================================================
+# Anamnese
+# ==========================================================
+
+class AnamneseForm(forms.Form):
+    """
+    Formulário montado a partir do catálogo (anamnese_perguntas.py):
+    uma pergunta no catálogo = um campo aqui. Nada é obrigatório, porque
+    o paciente pode ir respondendo aos poucos.
+    """
+
+    def __init__(self, *args, anamnese, **kwargs):
+        self.anamnese = anamnese
+        super().__init__(*args, initial=dict(anamnese.respostas or {}), **kwargs)
+
+        for item in TODOS_OS_ITENS:
+            self.fields[item.codigo] = self._campo(item)
+            if item.detalhe:
+                self.fields[item.codigo_detalhe] = forms.CharField(
+                    required=False,
+                    max_length=200,
+                    label=item.detalhe,
+                    widget=forms.TextInput(attrs={"placeholder": item.detalhe}),
+                )
+
+    @staticmethod
+    def _campo(item):
+        if item.tipo == MULTIPLA:
+            return forms.MultipleChoiceField(
+                required=False,
+                label=item.texto,
+                choices=item.opcoes,
+                widget=forms.CheckboxSelectMultiple,
+            )
+        if item.tipo == TEXTO:
+            return forms.CharField(
+                required=False,
+                max_length=500,
+                label=item.texto,
+                widget=forms.Textarea(attrs={"rows": 2}),
+            )
+        return forms.ChoiceField(
+            required=False,
+            label=item.texto,
+            choices=item.opcoes,
+            widget=forms.RadioSelect,
+        )
+
+    def secoes(self):
+        """Seções com os campos já ligados ao formulário, para o template."""
+        resultado = []
+        for secao in SECOES:
+            linhas = []
+            for item in secao.itens:
+                linhas.append({
+                    "item": item,
+                    "campo": self[item.codigo],
+                    "detalhe": self[item.codigo_detalhe] if item.detalhe else None,
+                    "multipla": item.tipo == MULTIPLA,
+                    "texto": item.tipo == TEXTO,
+                })
+            resultado.append({"secao": secao, "linhas": linhas})
+        return resultado
+
+    def salvar(self):
+        respostas = {}
+        for nome, valor in self.cleaned_data.items():
+            if isinstance(valor, str):
+                valor = valor.strip()
+            if valor in ("", [], None):
+                continue
+            respostas[nome] = valor
+
+        self.anamnese.respostas = respostas
+        self.anamnese.preenchida = True
+        self.anamnese.save()
+        return self.anamnese
+
 
 # ==========================================================
 # Dentistas e usuários
